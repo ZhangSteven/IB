@@ -13,6 +13,17 @@ logger = logging.getLogger(__name__)
 
 
 
+class UnhandledTradeType(Exception):
+	pass
+
+class InvalidSymbol(Exception):
+	pass
+
+class InvalidBuySell(Exception):
+	pass
+
+
+
 def fileToRecords(file):
 	"""
 	[String] file => [List] records
@@ -30,6 +41,8 @@ def toTradeRecord(record):
 	"""
 	[Dictionary] record => [Dictionary] tradeRecord
 
+	So far, this function works only if the trade type is futures.
+
 	Create a new trade record from the existing record, the trade record has 6
 	fields:
 
@@ -41,10 +54,96 @@ def toTradeRecord(record):
 	6. SettlementDate: of type datetime
 	"""
 	r = {}
-	
-
+	r['BloombergTicker'] = createTicker(record)
+	r['Side'] = createSide(record['Buy/Sell'])
+	r['Quantity'] = float(record['Quantity'])
+	r['Price'] = float(record['TradePrice'])
+	r['TradeDate'] = stringToDate(record['TradeDate'])
+	if record['AssetClass'] == 'FUT':
+		r['SettlementDate'] = r['TradeDate']
+	else:
+		raise UnhandledTradeType('invalid type {0} in {1}'.format(record['AssetClass'], r))
 
 	return r
+
+
+
+def createTicker(record):
+	"""
+	[Dictionary] record => [String] ticker
+
+	Create a Bloomberg ticker based on the record. It only works for certain
+	futures type now.
+	"""
+	if record['AssetClass'] != 'FUT':
+		raise UnhandledTradeType('invalid type {0} in {1}'.format(record['AssetClass'], r))
+	
+	uMap = {	# mapping underlying to Bloombert Ticker's first 2 letters 
+		'VIX': 'VX',
+		'HSI': 'HI',
+	}
+
+	mMap = {	# mapping month to Bloomberg Ticker's 3rd letter
+		'JAN': 'F',
+		'FEB': 'G',
+		'MAR': 'H',
+		'APR': 'J',
+		'MAY': 'K',
+		'JUN': 'M',
+		'JUL': 'N',
+		'AUG': 'Q',
+		'SEP': 'U',
+		'OCT': 'V',
+		'NOV': 'X',
+		'DEC': 'Z'
+	}
+
+	month, year = getMonthYear(record['Description'])
+	ticker = uMap[record['UnderlyingSymbol']] + mMap[month] + year[1]
+
+	# It seems that the symbol of the futures is just the Bloomberg Ticker,
+	# let's check
+	if ticker != record['Symbol']:
+		raise InvalidSymbol('record {0}'.format(record))
+
+	return ticker
+
+
+
+def getMonthYear(description):
+	"""
+	[String] description => [String] Month, [String] year (two digit)
+	
+	description string looks like: VIX 16JAN13 (16 is date, 13 is year), for
+	such a description, we want to return 'JAN', '13'
+	"""
+	dateString = description.split()[1]
+	return dateString[-5:-2], dateString[-2:]
+
+
+
+def createSide(buySell):
+	"""
+	[String] buySell => [String] longShort
+	"""
+	if buySell == 'BUY':
+		return 'LONG'
+	elif buySell == 'SELL':
+		return 'SHORT'
+	else:
+		raise InvalidBuySell(buySell)
+
+
+
+def stringToDate(dateString):
+	"""
+	[String] dateString => [datetime] date
+
+	dateString is of format: yyyymmdd
+	"""
+	return datetime.datetime(int(dateString[0:4]), int(dateString[4:6]), 
+								int(dateString[6:]))
+
 
 
 
@@ -77,7 +176,6 @@ def getCsvFiles(folder):
 
 
 
-
 if __name__ == '__main__':
 	from IB.utility import get_current_path
 	import logging.config
@@ -89,6 +187,4 @@ if __name__ == '__main__':
 	else:
 		# print('trade file: {0}'.format(tradeFiles[0]))
 		records = fileToRecords(tradeFiles[0])
-
-		
-
+		print(toTradeRecord(records[18]))
