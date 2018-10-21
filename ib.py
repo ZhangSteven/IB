@@ -22,6 +22,21 @@ class InvalidSymbol(Exception):
 class InvalidBuySell(Exception):
 	pass
 
+class TradeFileNotFound(Exception):
+	pass
+
+
+
+def createTradeRecords(directory):
+	"""
+	[String] directory => [List] trade records
+	"""
+	tradeFiles = getTradeFiles(getCsvFiles(directory))
+	if len(tradeFiles) == 0:
+		raise TradeFileNotFound('in directory {0}'.format(directory))
+	else:
+		return list(map(toTradeRecord, fileToRecords(tradeFiles[0])))
+
 
 
 def fileToRecords(file):
@@ -56,7 +71,7 @@ def toTradeRecord(record):
 	r = {}
 	r['BloombergTicker'] = createTicker(record)
 	r['Side'] = createSide(record['Buy/Sell'])
-	r['Quantity'] = float(record['Quantity'])
+	r['Quantity'] = abs(float(record['Quantity']))
 	r['Price'] = float(record['TradePrice'])
 	r['TradeDate'] = stringToDate(record['TradeDate'])
 	if record['AssetClass'] == 'FUT':
@@ -181,10 +196,4 @@ if __name__ == '__main__':
 	import logging.config
 	logging.config.fileConfig('logging.config', disable_existing_loggers=False)
 
-	tradeFiles = getTradeFiles(getCsvFiles(join(get_current_path(), 'samples')))
-	if len(tradeFiles) == 0:
-		print('trade file not found')
-	else:
-		# print('trade file: {0}'.format(tradeFiles[0]))
-		records = fileToRecords(tradeFiles[0])
-		print(toTradeRecord(records[18]))
+	
