@@ -72,7 +72,7 @@ def toTradeRecord(record):
 	r['BloombergTicker'] = createTicker(record)
 	r['Side'] = createSide(record['Buy/Sell'])
 	r['Quantity'] = abs(float(record['Quantity']))
-	r['Price'] = float(record['TradePrice'])
+	r['Price'] = float(record['Price'])
 	r['TradeDate'] = stringToDate(record['TradeDate'])
 	if record['AssetClass'] == 'FUT':
 		r['SettlementDate'] = r['TradeDate']
@@ -93,9 +93,14 @@ def createTicker(record):
 	if record['AssetClass'] != 'FUT':
 		raise UnhandledTradeType('invalid type {0} in {1}'.format(record['AssetClass'], r))
 	
-	uMap = {	# mapping underlying to Bloombert Ticker's first 2 letters 
-		'VIX': 'VX',
-		'HSI': 'HI',
+	bMap = {	# mapping underlying to Bloombert Ticker's first 2 letters,
+				# and index or comdty
+		'VIX': ('VX', 'Index'),
+		'HSI': ('HI', 'Index'),
+		'DAX': ('GX', 'Index'),
+		'ES' : ('ES', 'Index'),		# E-Mini S&P500 index futures
+		'CL' : ('CL', 'Comdty'),	# Light Sweet Crude Oil (WTI)
+		'ZS' : ('S ', 'Comdty')		# Soybean
 	}
 
 	mMap = {	# mapping month to Bloomberg Ticker's 3rd letter
@@ -114,16 +119,10 @@ def createTicker(record):
 	}
 
 	month, year = getMonthYear(record['Description'])
-	ticker = uMap[record['UnderlyingSymbol']] + mMap[month] + year[1]
+	prefix, suffix = bMap[record['UnderlyingSymbol']]
+	return prefix + mMap[month] + year[1] + ' ' + suffix
 
-	# It seems that the symbol of the futures is just the Bloomberg Ticker,
-	# let's check
-	if ticker != record['Symbol']:
-		raise InvalidSymbol('record {0}'.format(record))
-
-	return ticker
-
-
+	
 
 def getMonthYear(description):
 	"""
@@ -142,9 +141,9 @@ def createSide(buySell):
 	[String] buySell => [String] longShort
 	"""
 	if buySell == 'BUY':
-		return 'LONG'
+		return 'Buy'
 	elif buySell == 'SELL':
-		return 'SHORT'
+		return 'Sell'
 	else:
 		raise InvalidBuySell(buySell)
 
@@ -166,7 +165,7 @@ def getTradeFiles(files):
 	"""
 	[list] txt files => [list] trade files
 	"""
-	return list(filter(lambda fn: 'Trades_Activity' in fn.split('\\')[-1], files))
+	return list(filter(lambda fn: 'Trades_TradeConfirm' in fn.split('\\')[-1], files))
 
 
 
@@ -195,5 +194,7 @@ if __name__ == '__main__':
 	from IB.utility import get_current_path
 	import logging.config
 	logging.config.fileConfig('logging.config', disable_existing_loggers=False)
+
+
 
 	

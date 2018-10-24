@@ -17,7 +17,7 @@ class TestIB(unittest2.TestCase):
 
     def testTradeRecords(self):
         records = createTradeRecords(join(get_current_path(), 'samples'))
-        self.assertEqual(len(records), 150)
+        self.assertEqual(len(records), 32)
         self.verifyTrade1(records[0])
         self.verifyTrade2(records[29])
 
@@ -27,12 +27,12 @@ class TestIB(unittest2.TestCase):
         First trade
         """
         self.assertEqual(len(record), 6)   # there should be 6 fields
-        self.assertEqual('VXF3', record['BloombergTicker'])
-        self.assertEqual('LONG', record['Side'])
-        self.assertEqual(10, record['Quantity'])
-        self.assertAlmostEqual(18.9, record['Price'])
-        self.assertEqual(datetime(2012,11,19), record['TradeDate'])
-        self.assertEqual(datetime(2012,11,19), record['SettlementDate'])
+        self.assertEqual('GXH9 Index', record['BloombergTicker'])
+        self.assertEqual('Sell', record['Side'])
+        self.assertEqual(4, record['Quantity'])
+        self.assertAlmostEqual(11594, record['Price'])
+        self.assertEqual(datetime(2018,10,22), record['TradeDate'])
+        self.assertEqual(datetime(2018,10,22), record['SettlementDate'])
 
 
 
@@ -41,10 +41,10 @@ class TestIB(unittest2.TestCase):
         30th trade
         """
         self.assertEqual(len(record), 6)   # there should be 6 fields
-        self.assertEqual('VXH3', record['BloombergTicker'])
-        self.assertEqual('SHORT', record['Side'])
-        self.assertEqual(10, record['Quantity'])
-        self.assertAlmostEqual(20.8, record['Price'])
-        self.assertEqual(datetime(2012,11,19), record['TradeDate'])
-        self.assertEqual(datetime(2012,11,19), record['SettlementDate'])
+        self.assertEqual('ESM9 Index', record['BloombergTicker'])
+        self.assertEqual('Sell', record['Side'])
+        self.assertEqual(1, record['Quantity'])
+        self.assertAlmostEqual(2791.5, record['Price'])
+        self.assertEqual(datetime(2018,10,22), record['TradeDate'])
+        self.assertEqual(datetime(2018,10,22), record['SettlementDate'])
 
