@@ -6,7 +6,8 @@
 # 2. Geneva reconciliation file.
 #
 
-
+from utils.utility import writeCsv
+from IB.utility import get_current_path
 from os.path import join
 import csv, logging, datetime
 logger = logging.getLogger(__name__)
@@ -19,7 +20,7 @@ class UnhandledTradeType(Exception):
 class InvalidSymbol(Exception):
 	pass
 
-class InvalidBuySell(Exception):
+class InvalidTradeSide(Exception):
 	pass
 
 class TradeFileNotFound(Exception):
@@ -70,7 +71,7 @@ def toTradeRecord(record):
 	"""
 	r = {}
 	r['BloombergTicker'] = createTicker(record)
-	r['Side'] = createSide(record['Buy/Sell'])
+	r['Side'] = createSide(record['Buy/Sell'], record['Code'])
 	r['Quantity'] = abs(float(record['Quantity']))
 	r['Price'] = float(record['Price'])
 	r['TradeDate'] = stringToDate(record['TradeDate'])
@@ -78,6 +79,11 @@ def toTradeRecord(record):
 		r['SettlementDate'] = r['TradeDate']
 	else:
 		raise UnhandledTradeType('invalid type {0} in {1}'.format(record['AssetClass'], r))
+
+	# Convert to integer if possible, sometimes if the quantity of a futures
+	# contract is a float (like 15.0), BLoomberg may generate an error.
+	if r['Quantity'].is_integer():
+		r['Quantity'] = int(r['Quantity'])
 
 	return r
 
@@ -136,16 +142,32 @@ def getMonthYear(description):
 
 
 
-def createSide(buySell):
+def createSide(buySell, code):
 	"""
-	[String] buySell => [String] longShort
+	[String] buySell, [String] execution code => [String] Buy/Cover/Sell/Short
+
+	Map IB buy sell trades with execution code to Bloomberg trade side.
+	
+	code is a ; separated list of execution types, for example "C;P" means
+	closing trade, partial execution
+	Mapping rules:
+
+	buy, opening trade (O) => Buy
+	buy, closing trade (C) => Cover
+	sell,opening trade (O) => Short
+	sell,closing trade (C) => Sell
 	"""
-	if buySell == 'BUY':
+	codes = code.split(';')
+	if buySell == 'BUY' and 'O' in codes:
 		return 'Buy'
-	elif buySell == 'SELL':
+	elif buySell == 'BUY' and 'C' in codes:
+		return 'Cover'
+	elif buySell == 'SELL' and 'O' in codes:
+		return 'Short'
+	elif buySell == 'SELL' and 'C' in codes:
 		return 'Sell'
 	else:
-		raise InvalidBuySell(buySell)
+		raise InvalidTradeSide(buySell)
 
 
 
@@ -189,12 +211,87 @@ def getCsvFiles(folder):
 
 
 
+def writeTradeRecords(records):
+	"""
+	[List] records => create a output csv file for trades
+
+	The trade file will be uploaded to Bloomberg, it contains the below
+	fields:
+
+	Account: account code in AIM (e.g., 40006)
+	Security: Bloomberg Ticker
+	Broker: Broker code (e.g., IB-QUANT)
+	Side: Buy/Cover, Sell/Short
+	Quantity: 
+	Price:
+	Trade Date: [String] mm/dd/yy
+	Settlement Date: same format as Trade Date
+
+	No header row is required.
+	"""
+	fields = ['Account', 'BloombergTicker', 'Broker', 'Side', 'Quantity', 
+				'Price', 'TradeDate', 'SettlementDate']
+	file = join(get_current_path(), createTradeFileName(records[0]['TradeDate']))
+	writeCsv(file, [createCsvRow(fields, record) for record in records])
+
+
+
+def createTradeFileName(dt):
+	"""
+	[datetime] dt => [String] full path file name of the trade file
+
+	IB_trades_yyyy-mm-dd.csv
+	"""
+	return 'IB_trades_' + str(dt.year) + '-' + str(dt.month) + '-' + \
+			str(dt.day) +'.csv'
+
+
+
+def dateToString(dt):
+	"""
+	[datetime] dt => [String] mm/dd/yy
+	"""
+	return str(dt.month) + '/' + str(dt.day) + '/' + str(dt.year)[2:]
+
+
+
+def createCsvRow(fields, record):
+	"""
+	[List] fields, [Dictionary] trade record => [List] String items in a row
+	"""
+	def fieldToRow(field):
+		if field == 'Account':
+			return 'TEST6'
+		elif field == 'Broker':
+			return 'IB-QUANT'
+		elif field in ['TradeDate', 'SettlementDate']:
+			return dateToString(record[field])
+		else:
+			return record[field]
+
+	return list(map(fieldToRow, fields))
+
+
+
+def splitRecords(records):
+	"""
+	[List] records => [List] records1, [List] records2
+
+	If records contains both opening and closing trades on the same futures
+	contract, say "buy 5 HIX8", followed by "sell 2 HIX8". It is legal but
+	Bloomberg will consider these two trades form a box position, if there is
+	no long positions on HIX8 before the buy trade.
+
+	To avoid this problem, when the opening and closing trades for same futures
+	contract appear, we split them into two files.
+	"""
+	pass
+
 
 if __name__ == '__main__':
-	from IB.utility import get_current_path
 	import logging.config
 	logging.config.fileConfig('logging.config', disable_existing_loggers=False)
 
-
+	writeTradeRecords(createTradeRecords(join(get_current_path(), 'samples')))
 
 	

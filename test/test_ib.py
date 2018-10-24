@@ -19,7 +19,7 @@ class TestIB(unittest2.TestCase):
         records = createTradeRecords(join(get_current_path(), 'samples'))
         self.assertEqual(len(records), 32)
         self.verifyTrade1(records[0])
-        self.verifyTrade2(records[29])
+        self.verifyTrade2(records[11])
 
 
     def verifyTrade1(self, record):
@@ -28,7 +28,7 @@ class TestIB(unittest2.TestCase):
         """
         self.assertEqual(len(record), 6)   # there should be 6 fields
         self.assertEqual('GXH9 Index', record['BloombergTicker'])
-        self.assertEqual('Sell', record['Side'])
+        self.assertEqual('Short', record['Side'])
         self.assertEqual(4, record['Quantity'])
         self.assertAlmostEqual(11594, record['Price'])
         self.assertEqual(datetime(2018,10,22), record['TradeDate'])
@@ -38,13 +38,13 @@ class TestIB(unittest2.TestCase):
 
     def verifyTrade2(self, record):
         """
-        30th trade
+        12th trade
         """
         self.assertEqual(len(record), 6)   # there should be 6 fields
-        self.assertEqual('ESM9 Index', record['BloombergTicker'])
+        self.assertEqual('HIZ8 Index', record['BloombergTicker'])
         self.assertEqual('Sell', record['Side'])
-        self.assertEqual(1, record['Quantity'])
-        self.assertAlmostEqual(2791.5, record['Price'])
+        self.assertEqual(2, record['Quantity'])
+        self.assertAlmostEqual(26150, record['Price'])
         self.assertEqual(datetime(2018,10,22), record['TradeDate'])
         self.assertEqual(datetime(2018,10,22), record['SettlementDate'])
 
