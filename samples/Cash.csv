@@ -1,0 +1,5 @@
+"ClientAccountID","AccountAlias","CurrencyPrimary","StartingCash","StartingCashSecurities","StartingCashCommodities","ClientFees","ClientFeesSecurities","ClientFeesCommodities","Commissions","CommissionsSecurities","CommissionsCommodities","Deposits","DepositsSecurities","DepositsCommodities","Withdrawals","WithdrawalsSecurities","WithdrawalsCommodities","EndingCash","EndingCashSecurities","EndingCashCommodities","EndingSettledCash","EndingSettledCashSecurities","EndingSettledCashCommodities"
+"DU1237908","","BASE_SUMMARY","994444.4284","994444.4284","0","0","0","0","-9.1136","-9.1136","0","0","0","0","0","0","0","1112961.9667","1112961.9667","0","994192.8502","994192.8502","0"
+"DU1237908","","EUR","31794","31794","0","0","0","0","-8","-8","0","0","0","0","0","0","0","35706","35706","0","31786","31786","0"
+"DU1237908","","HKD","-217700","-217700","0","0","0","0","0","0","0","0","0","0","0","0","0","-248450","-248450","0","-217700","-217700","0"
+"DU1237908","","USD","985745.52","985745.52","0","0","0","0","0","0","0","0","0","0","0","0","0","1103970.52","1103970.52","0","985745.52","985745.52","0"

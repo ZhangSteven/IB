@@ -277,15 +277,29 @@ def splitRecords(records):
 	"""
 	[List] records => [List] records1, [List] records2
 
-	If records contains both opening and closing trades on the same futures
+	If records contain both opening and closing trades on the same futures
 	contract, say "buy 5 HIX8", followed by "sell 2 HIX8". It is legal but
 	Bloomberg will consider these two trades form a box position, if there is
 	no long positions on HIX8 before the buy trade.
 
 	To avoid this problem, when the opening and closing trades for same futures
 	contract appear, we split them into two files.
+
+	For example, we have the following trades:
+
+	Trade 			Type
+	Buy 5 HIX8		Open
+	Sell 5 HIX8		Close
+	Short 10 HIX8	Open
+	Cover 10 HIX8	Close
+
+	Then it's divided into 4 groups of trades, each with consistent types within
+	the group, open, close, open, close.
+
+	Then we upload the 4 files one by one, we won't see the box position problem.
 	"""
 	pass
+
 
 
 if __name__ == '__main__':

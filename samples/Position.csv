@@ -1,0 +1,6 @@
+"ClientAccountID","CurrencyPrimary","AssetClass","Symbol","Description","ListingExchange","UnderlyingSymbol","Multiplier","Strike","Expiry","Put/Call","Quantity","MarkPrice","PositionValue","FifoPnlUnrealized","Side","Code"
+"DU1237908","HKD","FUT","HSIZ8","HSI 28DEC18","","HSI","50","","20181228","","5","25254","6313500","-236150","Long",""
+"DU1237908","USD","FUT","CLF9","CL JAN19","","CL","1000","","20181219","","15","66.96","1004400","-42485.55","Long",""
+"DU1237908","EUR","FUT","FDXM MAR 19","DAX 15MAR19","","DAX","5","","20190315","","-10","11171.5","-558575","20967","Short",""
+"DU1237908","USD","FUT","ESM9","ES 21JUN19","","ES","50","","20190621","","-25","2679.8","-3349750","138123.75","Short",""
+"DU1237908","USD","FUT","S   MAR 19","ZS 14MAR19","","ZS","5000","","20190314","","-24","8.7675","-1052100","8332.32","Short",""
