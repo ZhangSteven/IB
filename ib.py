@@ -470,5 +470,5 @@ if __name__ == '__main__':
 	import logging.config
 	logging.config.fileConfig('logging.config', disable_existing_loggers=False)
 
-	writeToFile(toRecordGroups(createTradeRecords(join(get_current_path(), 'samples', 'trade2'))))
-	writeToFile(toRecordGroups(createTradeRecords(join(get_current_path(), 'samples', 'trade3'))))
+	writeToFile(toRecordGroups(createTradeRecords(join(get_current_path(), 'samples', 'trade1'))))
+	# writeToFile(toRecordGroups(createTradeRecords(join(get_current_path(), 'samples', 'trade3'))))
