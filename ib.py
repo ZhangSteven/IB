@@ -36,7 +36,7 @@ def createTradeRecords(directory):
 	if len(tradeFiles) == 0:
 		raise TradeFileNotFound('in directory {0}'.format(directory))
 	else:
-		return list(map(toTradeRecord, fileToRecords(tradeFiles[0])))
+		return list(map(toTradeRecord, toSortedRecords(fileToRecords(tradeFiles[0]))))
 
 
 
@@ -50,6 +50,67 @@ def fileToRecords(file):
 	with open(file, newline='') as csvfile:
 		reader = csv.DictReader(csvfile)
 		return [row for row in reader]
+
+
+
+def toSortedRecords(records):
+	"""
+	[List] records => [List] new records
+
+	Create a new list of records, the only difference is, the new list is sorted
+	by 'Date/Time' (execution time), from earliest to latest. If two records
+	have the same execution time, their order in the original list is preserved,
+	i.e., whichever comes first in the original list comes first in the softed
+	list.
+	"""
+	def takeRankDateTime(record):
+		return record['RankDateTime']
+
+	return sorted(toNewRecords(records), key=takeRankDateTime)
+
+
+
+def toNewRecords(records):
+	"""
+	[List] records => [List] new records
+
+	Map the record list to new reccord list, but for each record, the new record
+	has an extra field 'RankDateTime', as a tuple (rank, datetime).
+	"""
+	newRecords = []
+	for i in range(len(records)):
+		newRecord = duplicateRecord(records[i])
+		newRecord['RankDateTime'] = (toDateTime(newRecord['Date/Time']), i)
+		newRecords.append(newRecord)
+
+	return newRecords
+
+
+
+def duplicateRecord(record):
+	"""
+	[Dictionary] record => [Dictionary] new record
+
+	Duplicate the record to a new record.
+	"""
+	newRecord = {}
+	for key in record:
+		newRecord[key] = record[key]
+
+	return newRecord
+
+
+
+def toDateTime(dtString):
+	"""
+	[String] dtString => [datetime] datetime
+
+	dtString is a string of format "yyyymmdd;hhmmss", convert it to a datetime
+	object.
+	"""
+	dateString, hourString = dtString.split(';')
+	return datetime.datetime(int(dateString[0:4]), int(dateString[4:6]), int(dateString[6:]),
+							int(hourString[0:2]), int(hourString[2:4]), int(hourString[4:]))
 
 
 
@@ -77,6 +138,8 @@ def toTradeRecord(record):
 	r['TradeDate'] = stringToDate(record['TradeDate'])
 	if record['AssetClass'] == 'FUT':
 		r['SettlementDate'] = r['TradeDate']
+	elif record['AssetClass'] == 'STK':
+		r['SettlementDate'] = stringToDate(record['SettleDate'])
 	else:
 		raise UnhandledTradeType('invalid type {0} in {1}'.format(record['AssetClass'], r))
 
@@ -96,20 +159,41 @@ def createTicker(record):
 	Create a Bloomberg ticker based on the record. It only works for certain
 	futures type now.
 	"""
-	if record['AssetClass'] != 'FUT':
-		raise UnhandledTradeType('invalid type {0} in {1}'.format(record['AssetClass'], r))
-	
+	if record['AssetClass'] == 'STK' and record['CurrencyPrimary'] == 'USD' and \
+		record['Symbol'] == 'SPY':
+
+		return 'SPY US Equity'
+	elif record['AssetClass'] == 'FUT':
+		return createFuturesTicker(record)
+	else:
+		raise UnhandledTradeType('record: {0}'.format(record))
+
+
+
+def createFuturesTicker(record):
+	"""
+	[Dictionary] record => [String] ticker
+
+	Create a Bloomberg ticker for record of futures type.
+	"""
 	bMap = {	# mapping underlying to Bloombert Ticker's first 2 letters,
 				# and index or comdty
 		'VIX': ('VX', 'Index'),
 		'HSI': ('HI', 'Index'),
+		'MHI': ('HU', 'Index'), 	# mini Hang Seng index futures
 		'DAX': ('GX', 'Index'),
 		'ES' : ('ES', 'Index'),		# E-Mini S&P500 index futures
+		'NQ' : ('NQ', 'Index'),		# E-Mini NASDAQ 100 index futures
 		'CL' : ('CL', 'Comdty'),	# Light Sweet Crude Oil (WTI)
+		'PL' : ('PL', 'Comdty'),	# Platinum futures
+		'RB' : ('XB', 'Comdty'),	# Gasoline RBOB futures (NYMEX)
+		'RBOB' : ('PG', 'Comdty'),	# Gasoline RBOB futures (ICE)
+		'QG' : ('EO', 'Comdty'), 	# E-Mini Natural Gas futures
 		'ZS' : ('S ', 'Comdty')		# Soybean
 	}
 
 	mMap = {	# mapping month to Bloomberg Ticker's 3rd letter
+				# for futures contract
 		'JAN': 'F',
 		'FEB': 'G',
 		'MAR': 'H',
@@ -158,7 +242,7 @@ def createSide(buySell, code):
 	sell,closing trade (C) => Sell
 	"""
 	codes = code.split(';')
-	if buySell == 'BUY' and 'O' in codes:
+	if buySell == 'BUY' and ('O' in codes or 'D' in codes):
 		return 'Buy'
 	elif buySell == 'BUY' and 'C' in codes:
 		return 'Cover'
@@ -167,7 +251,7 @@ def createSide(buySell, code):
 	elif buySell == 'SELL' and 'C' in codes:
 		return 'Sell'
 	else:
-		raise InvalidTradeSide(buySell)
+		raise InvalidTradeSide('{0}, {1}'.format(buySell, code))
 
 
 
@@ -273,14 +357,14 @@ def createCsvRow(fields, record):
 
 
 
-def splitRecords(records):
+def toRecordGroups(records):
 	"""
-	[List] records => [List] records1, [List] records2
+	[List] records => [List] of [List] records
 
-	If records contain both opening and closing trades on the same futures
-	contract, say "buy 5 HIX8", followed by "sell 2 HIX8". It is legal but
-	Bloomberg will consider these two trades form a box position, if there is
-	no long positions on HIX8 before the buy trade.
+	If trades of opposite directions on the same futures contract appear, say 
+	"buy 5 HIX8", followed by "sell 2 HIX8". It is legal but Bloomberg will 
+	consider these two trades form a box position, if there is no long positions 
+	on HIX8 before the buy trade.
 
 	To avoid this problem, when the opening and closing trades for same futures
 	contract appear, we split them into two files.
@@ -298,7 +382,71 @@ def splitRecords(records):
 
 	Then we upload the 4 files one by one, we won't see the box position problem.
 	"""
-	pass
+	recordGroups = []
+	remaining = records
+	
+	while (remaining != []):
+		group, remaining = splitTrades(remaining)
+		recordGroups.append(group)
+
+	return recordGroups
+
+
+
+def splitTrades(records):
+	"""
+	[List] records => [List] group, [List] remaining
+	
+	Split the list of records into lists, where in list1 none of the trades
+	form a box position (have same underlying but of different direction).
+	"""
+	group = []
+	for i in range(len(records)):
+		if formBoxPosition(records[i], group):
+			break
+		else:
+			group.append(records[i])
+
+	if formBoxPosition(records[i], group):
+		return group, records[i:]
+	else:	# must be i = len(records) - 1 and no box position
+		return group, []
+
+
+
+def formBoxPosition(record, group):
+	"""
+	[Dictionary] record, [List] group => [Bool] whether the record forms a 
+		box position with any record in the group
+
+	A box position means two trades of the same ticker, but of different
+	directions.
+	"""
+	for r in group:
+		if record['BloombergTicker'] == r['BloombergTicker'] and \
+			isOppositeDirection(record['Side'], r['Side']):
+			return True
+
+	return False
+
+
+
+def isOppositeDirection(side1, side2):
+	"""
+	[String] side1, [String] side2 => [Bool] whether side1 and side2 are of
+	different direction.
+	"""
+	sMap = {
+		'Buy'  : 'long',
+		'Cover': 'long',
+		'Short': 'short',
+		'Sell' : 'short'
+	}
+
+	if sMap[side1] == sMap[side2]:
+		return False
+	else:
+		return True
 
 
 
@@ -306,6 +454,7 @@ if __name__ == '__main__':
 	import logging.config
 	logging.config.fileConfig('logging.config', disable_existing_loggers=False)
 
-	writeTradeRecords(createTradeRecords(join(get_current_path(), 'samples')))
+	# writeTradeRecords(createTradeRecords(join(get_current_path(), 'samples')))
 
-	
+	recordGroups = toRecordGroups(createTradeRecords(join(get_current_path(), 'samples', 'trade2')))
+	print(len(recordGroups))
