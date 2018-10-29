@@ -295,9 +295,9 @@ def getCsvFiles(folder):
 
 
 
-def writeTradeRecords(records):
+def writeToFile(recordGroups):
 	"""
-	[List] records => create a output csv file for trades
+	[List] recordGroups => create output csv file(s) for each group
 
 	The trade file will be uploaded to Bloomberg, it contains the below
 	fields:
@@ -315,19 +315,35 @@ def writeTradeRecords(records):
 	"""
 	fields = ['Account', 'BloombergTicker', 'Broker', 'Side', 'Quantity', 
 				'Price', 'TradeDate', 'SettlementDate']
-	file = join(get_current_path(), createTradeFileName(records[0]['TradeDate']))
-	writeCsv(file, [createCsvRow(fields, record) for record in records])
+
+	for (index, group) in enumerate(recordGroups):
+		writeCsv(groupToFile(index, group), 
+					[createCsvRow(fields, record) for record in group])
 
 
 
-def createTradeFileName(dt):
+def groupToFile(index, group):
+	return join(get_current_path(), 
+				createTradeFileName(group[0]['TradeDate'], createSuffix(index)))
+
+
+
+def createSuffix(i):
+	if i == 0:
+		return ''
+	else:
+		return '_part' + str(i+1)	# i = 1 => '_part2'
+
+
+
+def createTradeFileName(dt, suffix=''):
 	"""
 	[datetime] dt => [String] full path file name of the trade file
 
 	IB_trades_yyyy-mm-dd.csv
 	"""
 	return 'IB_trades_' + str(dt.year) + '-' + str(dt.month) + '-' + \
-			str(dt.day) +'.csv'
+			str(dt.day) + suffix + '.csv'
 
 
 
@@ -454,7 +470,5 @@ if __name__ == '__main__':
 	import logging.config
 	logging.config.fileConfig('logging.config', disable_existing_loggers=False)
 
-	# writeTradeRecords(createTradeRecords(join(get_current_path(), 'samples')))
-
-	recordGroups = toRecordGroups(createTradeRecords(join(get_current_path(), 'samples', 'trade2')))
-	print(len(recordGroups))
+	writeToFile(toRecordGroups(createTradeRecords(join(get_current_path(), 'samples', 'trade2'))))
+	writeToFile(toRecordGroups(createTradeRecords(join(get_current_path(), 'samples', 'trade3'))))
