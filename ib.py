@@ -120,7 +120,7 @@ def toTradeRecord(record):
 
 	So far, this function works only if the trade type is futures.
 
-	Create a new trade record from the existing record, the trade record has 6
+	Create a new trade record from the existing record, the trade record has 8
 	fields:
 
 	1. BloombergTicker
@@ -129,6 +129,8 @@ def toTradeRecord(record):
 	4. Price
 	5. TradeDate: of type datetime
 	6. SettlementDate: of type datetime
+	7. Commission Code 1: fixed to 'Broker Commission'
+	8. Commission Amt 1: total commission
 	"""
 	r = {}
 	r['BloombergTicker'] = createTicker(record)
@@ -142,6 +144,12 @@ def toTradeRecord(record):
 		r['SettlementDate'] = stringToDate(record['SettleDate'])
 	else:
 		raise UnhandledTradeType('invalid type {0} in {1}'.format(record['AssetClass'], r))
+
+	# check Bloomberg 'CFTK' page for all possible commission codes
+	# here we simply put the sum of all commissions, tax, exchange fees
+	# under the name of 'Broker Commission'
+	r['Commission Code 1'] = 'Broker Commission'
+	r['Commission Amt 1'] = abs(float(record['Commission']))
 
 	# Convert to integer if possible, sometimes if the quantity of a futures
 	# contract is a float (like 15.0), BLoomberg may generate an error.
@@ -314,7 +322,8 @@ def writeToFile(recordGroups):
 	No header row is required.
 	"""
 	fields = ['Account', 'BloombergTicker', 'Broker', 'Side', 'Quantity', 
-				'Price', 'TradeDate', 'SettlementDate']
+				'Price', 'TradeDate', 'SettlementDate', 'Commission Code 1',
+				'Commission Amt 1']
 
 	for (index, group) in enumerate(recordGroups):
 		writeCsv(groupToFile(index, group), 
@@ -436,33 +445,27 @@ def formBoxPosition(record, group):
 		box position with any record in the group
 
 	A box position means two trades of the same ticker, but of different
-	directions.
+	directions. There are two possibilities:
+
+	1. One trade is on the long side (Buy, Cover) and the other is on the
+		short side (Sell, Short).
+
+	2. Both trades are on the same side, but of different type. For example,
+		Cover, then Buy.
+
+	If case (1), then obviously it will form a box position by. If in case (2),
+	say it is "Cover" then "Buy", Bloomberg will still complain. Because
+	there is an existing "Short" position, the "Buy" will form a box position
+	with that existing short positions.
+
+	Therefore, when two trades on the same ticker appear, as long as they are
+	of different trade type, a box postion will occur.
 	"""
 	for r in group:
-		if record['BloombergTicker'] == r['BloombergTicker'] and \
-			isOppositeDirection(record['Side'], r['Side']):
+		if record['BloombergTicker'] == r['BloombergTicker'] and record['Side'] != r['Side']:
 			return True
 
 	return False
-
-
-
-def isOppositeDirection(side1, side2):
-	"""
-	[String] side1, [String] side2 => [Bool] whether side1 and side2 are of
-	different direction.
-	"""
-	sMap = {
-		'Buy'  : 'long',
-		'Cover': 'long',
-		'Short': 'short',
-		'Sell' : 'short'
-	}
-
-	if sMap[side1] == sMap[side2]:
-		return False
-	else:
-		return True
 
 
 
@@ -470,5 +473,5 @@ if __name__ == '__main__':
 	import logging.config
 	logging.config.fileConfig('logging.config', disable_existing_loggers=False)
 
-	writeToFile(toRecordGroups(createTradeRecords(join(get_current_path(), 'samples', 'trade1'))))
+	writeToFile(toRecordGroups(createTradeRecords(join(get_current_path(), 'samples', 'trade3'))))
 	# writeToFile(toRecordGroups(createTradeRecords(join(get_current_path(), 'samples', 'trade3'))))

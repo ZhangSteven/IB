@@ -37,17 +37,31 @@ class TestIB(unittest2.TestCase):
 
 
 
+    def testRecordGroups2(self):
+        """
+        It will split to 3 groups.
+        """
+        groups = toRecordGroups(createTradeRecords(join(get_current_path(), 'samples', 'trade3')))
+        self.assertEqual(len(groups), 3)
+        self.assertEqual(len(groups[0]), 6)     # 1st group has 6 trades
+        self.assertEqual(len(groups[1]), 6)     # 2nd group has 6 trades
+        self.assertEqual(len(groups[2]), 4)
+
+
+
     def verifyTrade1(self, record):
         """
         First trade
         """
-        self.assertEqual(len(record), 6)   # there should be 6 fields
+        self.assertEqual(len(record), 8)   # there should be 8 fields
         self.assertEqual('HIZ8 Index', record['BloombergTicker'])
         self.assertEqual('Buy', record['Side'])
         self.assertEqual(1, record['Quantity'])
         self.assertAlmostEqual(26198, record['Price'])
         self.assertEqual(datetime(2018,10,22), record['TradeDate'])
         self.assertEqual(datetime(2018,10,22), record['SettlementDate'])
+        self.assertAlmostEqual(30, record['Commission Amt 1'])
+        self.assertEqual('Broker Commission', record['Commission Code 1'])
 
 
 
@@ -55,7 +69,7 @@ class TestIB(unittest2.TestCase):
         """
         29th trade
         """
-        self.assertEqual(len(record), 6)   # there should be 6 fields
+        self.assertEqual(len(record), 8)   # there should be 6 fields
         self.assertEqual('HIZ8 Index', record['BloombergTicker'])
         self.assertEqual('Sell', record['Side'])
         self.assertEqual(3, record['Quantity'])
@@ -69,7 +83,7 @@ class TestIB(unittest2.TestCase):
         """
         6th trade
         """
-        self.assertEqual(len(record), 6)   # there should be 6 fields
+        self.assertEqual(len(record), 8)   # there should be 6 fields
         self.assertEqual('NQZ8 Index', record['BloombergTicker'])
         self.assertEqual('Short', record['Side'])
         self.assertEqual(4, record['Quantity'])
@@ -83,11 +97,13 @@ class TestIB(unittest2.TestCase):
         """
         7th trade
         """
-        self.assertEqual(len(record), 6)   # there should be 6 fields
+        self.assertEqual(len(record), 8)   # there should be 6 fields
         self.assertEqual('NQZ8 Index', record['BloombergTicker'])
         self.assertEqual('Cover', record['Side'])
         self.assertEqual(2, record['Quantity'])
         self.assertAlmostEqual(6897.25, record['Price'])
         self.assertEqual(datetime(2018,10,25), record['TradeDate'])
         self.assertEqual(datetime(2018,10,25), record['SettlementDate'])
+        self.assertAlmostEqual(4.1, record['Commission Amt 1'])
+        self.assertEqual('Broker Commission', record['Commission Code 1'])
 
