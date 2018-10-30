@@ -23,8 +23,68 @@ class InvalidSymbol(Exception):
 class InvalidTradeSide(Exception):
 	pass
 
-class TradeFileNotFound(Exception):
+class InvalidFileName(Exception):
 	pass
+
+
+
+def processCashPositionFile(file, outputDir=get_current_path()):
+	"""
+	[String] cash or position file => [String] output file
+
+	Convert an IB cash or position file to cash or position file ready
+	for Geneva reconciliation.
+	"""
+	if isCashFile(file):
+		return processCashFile(file, outputDir)
+	elif isPositionFile(file):
+		return processPositionFile(file, outputDir)
+	else:
+		raise InvalidFileName(file)
+
+
+
+def processPositionFile(file, outputDir):
+	"""
+	[String] file, [String] outputDir => [String] output csv file
+	"""
+	return writePositionFile(createPositionRecords(file), outputDir)
+
+
+
+def isCashFile(file):
+	"""
+	[String] file => [Bool] yesno
+
+	file is a full path file name.
+	"""
+	if 'cash' in fileNameWithoutPath(file).split('.')[0]:
+		return True
+	else:
+		return False
+
+
+
+def isPositionFile(file):
+	"""
+	[String] file => [Bool] yesno
+
+	file is a full path file name.
+	"""
+	if 'position' in fileNameWithoutPath(file).split('.')[0]:
+		return True
+	else:
+		return False
+
+
+
+def fileNameWithoutPath(file):
+	"""
+	[String] file => [String] file
+
+	C:\temp\file1.txt => file1.txt
+	"""
+	return file.split('\\')[-1]
 
 
 
@@ -36,6 +96,14 @@ def processTradeFile(file, outputDir=get_current_path()):
 	a list of output csv files, to be uploaded by Bloomberg.
 	"""
 	return writeToFile(toRecordGroups(createTradeRecords(file)), outputDir)
+
+
+
+def createPositionRecords(file):
+	"""
+	[String] file => [List] position records
+	"""
+	return list(map(toPositionRecord, fileToRecords(file)))
 
 
 
@@ -125,8 +193,6 @@ def toTradeRecord(record):
 	"""
 	[Dictionary] record => [Dictionary] tradeRecord
 
-	So far, this function works only if the trade type is futures.
-
 	Create a new trade record from the existing record, the trade record has 8
 	fields:
 
@@ -163,6 +229,27 @@ def toTradeRecord(record):
 	if r['Quantity'].is_integer():
 		r['Quantity'] = int(r['Quantity'])
 
+	return r
+
+
+
+def toPositionRecord(record):
+	"""
+	[Dictionary] record => [Dictionary] position record
+
+	Create a new trade record from the existing record, the trade record has 8
+	fields:
+
+	1. BloombergTicker:
+	2. Quantity: float number, use negative to indicate short position
+	3. Currency
+	4. Date: of type datetime
+	"""
+	r = {}
+	r['BloombergTicker'] = createTicker(record)
+	r['Quantity'] = float(record['Quantity'])
+	r['Currency'] = record['CurrencyPrimary']
+	r['Date'] = stringToDate(record['ReportDate'])
 	return r
 
 
@@ -342,8 +429,45 @@ def writeToFile(recordGroups, outputDir):
 
 
 
+def writePositionFile(records, outputDir):
+	"""
+	[List] position records => [String] output csv file name
+
+	The position file will be uploaded to Geneva for reconciliation, it 
+	contains the below fields:
+
+	Portfolio: account code in Geneva (e.g., 40006)
+	Custodian: custodian bank ID
+	Date: [String] yyyy-mm-dd
+	Investment: identifier in Geneva
+	Currency:
+	Quantity:
+	Date: same as Date above
+
+	A header row is included.
+	"""
+	fields = ['Portfolio', 'Custodian', 'Date', 'Investment', 'Currency',
+				'Quantity', 'Date']
+
+	file = toPositionFileName(outputDir, records[0]['Date'])
+	writeCsv(file, createPositionCsvRows(fields, records))
+
+	return file
+
+
+
 def toFileName(index, group, outputDir):
 	return join(outputDir, createTradeFileName(group[0]['TradeDate'], createSuffix(index)))
+
+
+
+def toPositionFileName(outputDir, dt):
+	"""
+	[String] output dir, [datetime] dt => [String] position file name
+	"""
+	filename = 'IB_' + str(dt.year) + '-' + str(dt.month) + '-' + \
+			str(dt.day) + '_position' + '.csv'
+	return join(outputDir, filename)
 
 
 
@@ -389,6 +513,36 @@ def createCsvRow(fields, record):
 			return record[field]
 
 	return list(map(fieldToRow, fields))
+
+
+
+def createPositionCsvRows(fields, records):
+	"""
+	[List] fields, [List] position records => [List] rows in csv
+	
+	The first row is the headers (fields)
+	"""
+	def fieldToColumn(field, record):
+		if field == 'Portfolio':
+			return 'TEST6'
+		elif field == 'Custodian':
+			return 'IB'
+		elif field == 'Investment':
+			if record['BloombergTicker'].endswith(' Equity'):
+				return record['BloombergTicker'][:-7]	# strip off ' Equity'
+			else:
+				return record['BloombergTicker']
+		elif field == 'Date':
+			return dateToString(record['Date'])
+		else:
+			return record[field]
+
+	def recordToRow(record):
+		return [fieldToColumn(field, record) for field in fields]
+
+	rows = [fields]
+	rows.extend([recordToRow(record) for record in records])
+	return rows
 
 
 
@@ -483,5 +637,7 @@ if __name__ == '__main__':
 	import logging.config
 	logging.config.fileConfig('logging.config', disable_existing_loggers=False)
 
-	processTradeFile(join(get_current_path(), 'samples', 'trade3', 
-						'DU1237908.Trades_TradeConfirmFlex.3.csv'))
+	# processTradeFile(join(get_current_path(), 'samples', 'trade3', 
+	# 					'DU1237908.Trades_TradeConfirmFlex.3.csv'))
+
+	processCashPositionFile(join(get_current_path(), 'samples', 'position.csv'))

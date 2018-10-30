@@ -4,7 +4,7 @@
 import unittest2
 from os.path import join
 from IB.utility import get_current_path
-from IB.ib import createTradeRecords, toRecordGroups
+from IB.ib import createTradeRecords, toRecordGroups, createPositionRecords
 from datetime import datetime
 
 
@@ -49,6 +49,14 @@ class TestIB(unittest2.TestCase):
         self.assertEqual(len(groups[0]), 6)     # 1st group has 6 trades
         self.assertEqual(len(groups[1]), 6)     # 2nd group has 6 trades
         self.assertEqual(len(groups[2]), 4)
+
+
+
+    def testHolding(self):
+        records = createPositionRecords(join(get_current_path(), 'samples', 'position.csv'))
+        self.assertEqual(len(records), 12)
+        self.verifyPosition1(records[0])
+        self.verifyPosition2(records[11])
 
 
 
@@ -109,4 +117,20 @@ class TestIB(unittest2.TestCase):
         self.assertEqual(datetime(2018,10,25), record['SettlementDate'])
         self.assertAlmostEqual(4.1, record['Commission Amt 1'])
         self.assertEqual('Broker Commission', record['Commission Code 1'])
+
+
+
+    def verifyPosition1(self, record):
+        self.assertEqual(record['Currency'], 'USD')
+        self.assertEqual(record['BloombergTicker'], 'SPY US Equity')
+        self.assertAlmostEqual(record['Quantity'], 500)
+        self.assertEqual(record['Date'], datetime(2018,10,26))
+
+
+
+    def verifyPosition2(self, record):
+        self.assertEqual(record['Currency'], 'USD')
+        self.assertEqual(record['BloombergTicker'], 'S H9 Comdty')
+        self.assertAlmostEqual(record['Quantity'], -24)
+        self.assertEqual(record['Date'], datetime(2018,10,26))
 

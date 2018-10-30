@@ -6,4 +6,6 @@ logs/*.log
 
 # ignore the resulting csv file
 IB_trades_*.csv
+IB_*_position.csv
+IB_*_cash.csv
 
