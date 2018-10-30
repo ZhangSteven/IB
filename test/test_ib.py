@@ -4,7 +4,8 @@
 import unittest2
 from os.path import join
 from IB.utility import get_current_path
-from IB.ib import createTradeRecords, toRecordGroups, createPositionRecords
+from IB.ib import createTradeRecords, toRecordGroups, createPositionRecords, \
+                    createCashRecords
 from datetime import datetime
 
 
@@ -57,6 +58,16 @@ class TestIB(unittest2.TestCase):
         self.assertEqual(len(records), 12)
         self.verifyPosition1(records[0])
         self.verifyPosition2(records[11])
+
+
+
+    def testCash(self):
+        records = createCashRecords(join(get_current_path(), 'samples', 'cash.csv'))
+        self.assertEqual(len(records), 3)
+        self.assertAlmostEqual(records[0]['Quantity'], 29056)
+        self.assertEqual(records[0]['Currency'], 'EUR')
+        self.assertAlmostEqual(records[2]['Quantity'], 1091204.12)
+        self.assertEqual(records[2]['Currency'], 'USD')
 
 
 
