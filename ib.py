@@ -28,15 +28,22 @@ class TradeFileNotFound(Exception):
 
 
 
-def createTradeRecords(directory):
+def processTradeFile(file, outputDir=get_current_path()):
 	"""
-	[String] directory => [List] trade records
+	[String] trade file, [String] outputDir => [List] output file names
+	
+	read the trade file, convert it to trade records and write it to
+	a list of output csv files, to be uploaded by Bloomberg.
 	"""
-	tradeFiles = getTradeFiles(getCsvFiles(directory))
-	if len(tradeFiles) == 0:
-		raise TradeFileNotFound('in directory {0}'.format(directory))
-	else:
-		return list(map(toTradeRecord, toSortedRecords(fileToRecords(tradeFiles[0]))))
+	return writeToFile(toRecordGroups(createTradeRecords(file)), outputDir)
+
+
+
+def createTradeRecords(file):
+	"""
+	[String] file => [List] trade records
+	"""
+	return list(map(toTradeRecord, toSortedRecords(fileToRecords(file))))
 
 
 
@@ -275,35 +282,35 @@ def stringToDate(dateString):
 
 
 
-def getTradeFiles(files):
-	"""
-	[list] txt files => [list] trade files
-	"""
-	return list(filter(lambda fn: 'Trades_TradeConfirm' in fn.split('\\')[-1], files))
+# def getTradeFiles(files):
+# 	"""
+# 	[list] txt files => [list] trade files
+# 	"""
+# 	return list(filter(lambda fn: 'Trades_TradeConfirm' in fn.split('\\')[-1], files))
 
 
 
-def getCsvFiles(folder):
-	"""
-	[string] folder => [list] txt files in the folder
-	"""
-	from os import listdir
-	from os.path import isfile
+# def getCsvFiles(folder):
+# 	"""
+# 	[string] folder => [list] txt files in the folder
+# 	"""
+# 	from os import listdir
+# 	from os.path import isfile
 
-	logger.info('getCsvFiles(): folder {0}'.format(folder))
+# 	logger.info('getCsvFiles(): folder {0}'.format(folder))
 
-	def isCsvFile(file):
-		"""
-		[string] file name (without path) => [Bool] is it a csv file?
-		"""
-		return file.split('.')[-1] == 'csv'
+# 	def isCsvFile(file):
+# 		"""
+# 		[string] file name (without path) => [Bool] is it a csv file?
+# 		"""
+# 		return file.split('.')[-1] == 'csv'
 
-	return [join(folder, f) for f in listdir(folder) \
-			if isfile(join(folder, f)) and isCsvFile(f)]
+# 	return [join(folder, f) for f in listdir(folder) \
+# 			if isfile(join(folder, f)) and isCsvFile(f)]
 
 
 
-def writeToFile(recordGroups):
+def writeToFile(recordGroups, outputDir):
 	"""
 	[List] recordGroups => create output csv file(s) for each group
 
@@ -325,15 +332,18 @@ def writeToFile(recordGroups):
 				'Price', 'TradeDate', 'SettlementDate', 'Commission Code 1',
 				'Commission Amt 1']
 
+	outputFiles = []
 	for (index, group) in enumerate(recordGroups):
-		writeCsv(groupToFile(index, group), 
-					[createCsvRow(fields, record) for record in group])
+		file = toFileName(index, group, outputDir)
+		writeCsv(file, [createCsvRow(fields, record) for record in group])
+		outputFiles.append(file)
+
+	return outputFiles
 
 
 
-def groupToFile(index, group):
-	return join(get_current_path(), 
-				createTradeFileName(group[0]['TradeDate'], createSuffix(index)))
+def toFileName(index, group, outputDir):
+	return join(outputDir, createTradeFileName(group[0]['TradeDate'], createSuffix(index)))
 
 
 
@@ -473,5 +483,5 @@ if __name__ == '__main__':
 	import logging.config
 	logging.config.fileConfig('logging.config', disable_existing_loggers=False)
 
-	writeToFile(toRecordGroups(createTradeRecords(join(get_current_path(), 'samples', 'trade3'))))
-	# writeToFile(toRecordGroups(createTradeRecords(join(get_current_path(), 'samples', 'trade3'))))
+	processTradeFile(join(get_current_path(), 'samples', 'trade3', 
+						'DU1237908.Trades_TradeConfirmFlex.3.csv'))

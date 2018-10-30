@@ -16,7 +16,8 @@ class TestIB(unittest2.TestCase):
 
 
     def testTradeRecords(self):
-        records = createTradeRecords(join(get_current_path(), 'samples', 'trade1'))
+        records = createTradeRecords(join(get_current_path(), 'samples', 'trade1',
+            'DU1237908.Trades_TradeConfirmFlex.Sample.csv'))
         self.assertEqual(len(records), 32)
         self.verifyTrade1(records[0])
         self.verifyTrade2(records[28])
@@ -28,7 +29,8 @@ class TestIB(unittest2.TestCase):
         After sorting, 6th and 7th records form a box position, therefore all
         records should be separated into 2 groups.
         """
-        groups = toRecordGroups(createTradeRecords(join(get_current_path(), 'samples', 'trade2')))
+        groups = toRecordGroups(createTradeRecords(join(get_current_path(), 'samples', 'trade2',
+            'DU1237908.Trades_TradeConfirmFlex.2.csv')))
         self.assertEqual(len(groups), 2)
         self.assertEqual(len(groups[0]), 6)     # 1st group has 6 trades
         self.assertEqual(len(groups[1]), 22)    # 2nd group has 22 trades
@@ -41,7 +43,8 @@ class TestIB(unittest2.TestCase):
         """
         It will split to 3 groups.
         """
-        groups = toRecordGroups(createTradeRecords(join(get_current_path(), 'samples', 'trade3')))
+        groups = toRecordGroups(createTradeRecords(join(get_current_path(), 'samples', 'trade3',
+            'DU1237908.Trades_TradeConfirmFlex.3.csv')))
         self.assertEqual(len(groups), 3)
         self.assertEqual(len(groups[0]), 6)     # 1st group has 6 trades
         self.assertEqual(len(groups[1]), 6)     # 2nd group has 6 trades
