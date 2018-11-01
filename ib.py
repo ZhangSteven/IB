@@ -7,7 +7,7 @@
 #
 
 from utils.utility import writeCsv
-from IB.utility import get_current_path
+from IB.utility import get_current_path, toRecordGroups, writeToFile
 from os.path import join
 import csv, logging, datetime
 logger = logging.getLogger(__name__)
@@ -106,7 +106,14 @@ def processTradeFile(file, outputDir=get_current_path()):
 	a list of output csv files, to be uploaded by Bloomberg.
 	"""
 	logger.info('processTradeFile(): {0}'.format(file))
-	return writeToFile(toRecordGroups(createTradeRecords(file)), outputDir)
+	return writeToFile(
+				toRecordGroups(
+					createTradeRecords(file)
+				)
+				, outputDir
+				, 'TEST6'
+				, 'IB-QUANT'
+			)
 
 
 
@@ -409,67 +416,6 @@ def stringToDate(dateString):
 
 
 
-
-# def getTradeFiles(files):
-# 	"""
-# 	[list] txt files => [list] trade files
-# 	"""
-# 	return list(filter(lambda fn: 'Trades_TradeConfirm' in fn.split('\\')[-1], files))
-
-
-
-# def getCsvFiles(folder):
-# 	"""
-# 	[string] folder => [list] txt files in the folder
-# 	"""
-# 	from os import listdir
-# 	from os.path import isfile
-
-# 	logger.info('getCsvFiles(): folder {0}'.format(folder))
-
-# 	def isCsvFile(file):
-# 		"""
-# 		[string] file name (without path) => [Bool] is it a csv file?
-# 		"""
-# 		return file.split('.')[-1] == 'csv'
-
-# 	return [join(folder, f) for f in listdir(folder) \
-# 			if isfile(join(folder, f)) and isCsvFile(f)]
-
-
-
-def writeToFile(recordGroups, outputDir):
-	"""
-	[List] recordGroups => create output csv file(s) for each group
-
-	The trade file will be uploaded to Bloomberg, it contains the below
-	fields:
-
-	Account: account code in AIM (e.g., 40006)
-	Security: Bloomberg Ticker
-	Broker: Broker code (e.g., IB-QUANT)
-	Side: Buy/Cover, Sell/Short
-	Quantity: 
-	Price:
-	Trade Date: [String] mm/dd/yy
-	Settlement Date: same format as Trade Date
-
-	No header row is required.
-	"""
-	fields = ['Account', 'BloombergTicker', 'Broker', 'Side', 'Quantity', 
-				'Price', 'TradeDate', 'SettlementDate', 'Commission Code 1',
-				'Commission Amt 1']
-
-	outputFiles = []
-	for (index, group) in enumerate(recordGroups):
-		file = toFileName(index, group, outputDir)
-		writeCsv(file, [createCsvRow(fields, record) for record in group])
-		outputFiles.append(file)
-
-	return outputFiles
-
-
-
 def writePositionFile(records, outputDir):
 	"""
 	[List] position records => [String] output csv file name
@@ -523,11 +469,6 @@ def writeCashFile(records, outputDir):
 
 
 
-def toFileName(index, group, outputDir):
-	return join(outputDir, createTradeFileName(group[0]['TradeDate'], createSuffix(index)))
-
-
-
 def toPositionFileName(outputDir, dt):
 	"""
 	[String] output dir, [datetime] dt => [String] position file name
@@ -543,62 +484,6 @@ def toCashFileName(outputDir, dt):
 	"""
 	filename = 'IB_' + dateToString_yyyymmdd(dt) + '_cash' + '.csv'
 	return join(outputDir, filename)
-
-
-
-def createSuffix(i):
-	if i == 0:
-		return ''
-	else:
-		return '_part' + str(i+1)	# i = 1 => '_part2'
-
-
-
-def createTradeFileName(dt, suffix=''):
-	"""
-	[datetime] dt => [String] full path file name of the trade file
-
-	IB_trades_yyyy-mm-dd.csv
-	"""
-	return 'IB_trades_' + dateToString_yyyymmdd(dt) + suffix + '.csv'
-
-
-
-def dateToString(dt):
-	"""
-	[datetime] dt => [String] mm/dd/yy
-
-	This format is required by Bloomberg trade upload
-	"""
-	return str(dt.month) + '/' + str(dt.day) + '/' + str(dt.year)[2:]
-
-
-
-def dateToString_yyyymmdd(dt):
-	"""
-	[datetime] dt => [String] yyyy-mm-dd
-
-	This format is required by Geneva cash or position reconciliation
-	"""
-	return str(dt.year) + '-' + str(dt.month) + '-' + str(dt.day)
-
-
-
-def createCsvRow(fields, record):
-	"""
-	[List] fields, [Dictionary] trade record => [List] String items in a row
-	"""
-	def fieldToRow(field):
-		if field == 'Account':
-			return 'TEST6'
-		elif field == 'Broker':
-			return 'IB-QUANT'
-		elif field in ['TradeDate', 'SettlementDate']:
-			return dateToString(record[field])
-		else:
-			return record[field]
-
-	return list(map(fieldToRow, fields))
 
 
 
@@ -637,92 +522,6 @@ def createCsvRows(fields, records):
 	rows.extend([recordToRow(record) for record in records])
 	return rows
 
-
-
-def toRecordGroups(records):
-	"""
-	[List] records => [List] of [List] records
-
-	If trades of opposite directions on the same futures contract appear, say 
-	"buy 5 HIX8", followed by "sell 2 HIX8". It is legal but Bloomberg will 
-	consider these two trades form a box position, if there is no long positions 
-	on HIX8 before the buy trade.
-
-	To avoid this problem, when the opening and closing trades for same futures
-	contract appear, we split them into two files.
-
-	For example, we have the following trades:
-
-	Trade 			Type
-	Buy 5 HIX8		Open
-	Sell 5 HIX8		Close
-	Short 10 HIX8	Open
-	Cover 10 HIX8	Close
-
-	Then it's divided into 4 groups of trades, each with consistent types within
-	the group, open, close, open, close.
-
-	Then we upload the 4 files one by one, we won't see the box position problem.
-	"""
-	recordGroups = []
-	remaining = records
-	
-	while (remaining != []):
-		group, remaining = splitTrades(remaining)
-		recordGroups.append(group)
-
-	return recordGroups
-
-
-
-def splitTrades(records):
-	"""
-	[List] records => [List] group, [List] remaining
-	
-	Split the list of records into lists, where in list1 none of the trades
-	form a box position (have same underlying but of different direction).
-	"""
-	group = []
-	for i in range(len(records)):
-		if formBoxPosition(records[i], group):
-			break
-		else:
-			group.append(records[i])
-
-	if formBoxPosition(records[i], group):
-		return group, records[i:]
-	else:	# must be i = len(records) - 1 and no box position
-		return group, []
-
-
-
-def formBoxPosition(record, group):
-	"""
-	[Dictionary] record, [List] group => [Bool] whether the record forms a 
-		box position with any record in the group
-
-	A box position means two trades of the same ticker, but of different
-	directions. There are two possibilities:
-
-	1. One trade is on the long side (Buy, Cover) and the other is on the
-		short side (Sell, Short).
-
-	2. Both trades are on the same side, but of different type. For example,
-		Cover, then Buy.
-
-	If case (1), then obviously it will form a box position by. If in case (2),
-	say it is "Cover" then "Buy", Bloomberg will still complain. Because
-	there is an existing "Short" position, the "Buy" will form a box position
-	with that existing short positions.
-
-	Therefore, when two trades on the same ticker appear, as long as they are
-	of different trade type, a box postion will occur.
-	"""
-	for r in group:
-		if record['BloombergTicker'] == r['BloombergTicker'] and record['Side'] != r['Side']:
-			return True
-
-	return False
 
 
 
