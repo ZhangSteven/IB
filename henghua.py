@@ -6,9 +6,7 @@
 # 2. Geneva reconciliation file.
 #
 
-from utils.utility import writeCsv
-from HGNH.utility import get_current_path
-from IB.ib import writeToFile, toRecordGroups
+from IB.utility import get_current_path, writeToFile, toRecordGroups
 from xlrd import open_workbook
 from xlrd.xldate import xldate_as_datetime
 from os.path import join
@@ -31,7 +29,9 @@ def processTradeFile(file, outputDir):
 						)
 					)
 				)
-				, outputDir	
+				, outputDir
+				, 'TEST6C'
+				, 'HGNH-QUANT'
 			)
 
 
@@ -186,8 +186,6 @@ if __name__ == '__main__':
 		sys.exit(1)
 	elif args.type == 't':
 		processTradeFile(join(get_current_path(), args.file), get_current_path())
-		# print(linesToRecords(fileToLines(join(get_current_path(), args.file))))
-
 
 	elif args.type == 'c':
 		processCashFile(join(get_current_path(), args.file), get_current_path())
