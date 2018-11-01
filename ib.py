@@ -391,7 +391,7 @@ def createSide(buySell, code):
 		return 'Cover'
 	elif buySell == 'SELL' and 'O' in codes:
 		return 'Short'
-	elif buySell == 'SELL' and ('C' in codes or codes == ['']):
+	elif buySell == 'SELL':
 		return 'Sell'
 	else:
 		raise InvalidTradeSide('{0}, {1}'.format(buySell, code))
@@ -730,8 +730,29 @@ if __name__ == '__main__':
 	import logging.config
 	logging.config.fileConfig('logging.config', disable_existing_loggers=False)
 
-	processTradeFile(join(get_current_path(), 'samples', 'trade3', 
-						'DU1237908.Trades_TradeConfirmFlex.3.csv'))
+	import argparse
+	parser = argparse.ArgumentParser()
+	parser.add_argument('file', metavar='input file', type=str)
+	parser.add_argument('--type', metavar='file type', choices=['t', 'c', 'p'], 
+						default='t')
+	args = parser.parse_args()
 
-	processCashPositionFile(join(get_current_path(), 'samples', 'position.csv'))
-	processCashPositionFile(join(get_current_path(), 'samples', 'cash.csv'))
+	"""
+	To run the program, put a trade/cash/position file in the local directory, 
+	then do:
+
+		python ib.py <file_name> --type c (p for position file 
+										  , c for cash file
+										  , t for trade file
+										  , default is 't')
+	"""
+	import sys
+	if args.file == None:
+		print('input file name is missing')
+		sys.exit(1)
+	elif args.type == 't':
+		processTradeFile(join(get_current_path(), args.file))
+	elif args.type == 'c':
+		processCashFile(join(get_current_path(), args.file), get_current_path())
+	elif args.type == 'p':
+		processPositionFile(join(get_current_path(), args.file), get_current_path())
