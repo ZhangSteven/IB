@@ -1,8 +1,8 @@
 # IB
 Convert InteractiveBrokers' files to Bloomberg and Geneva format:
 
-Bloomberg trade file: XML format
-Geneva reconciliation file: CSV format
+Bloomberg file: CSV format, for trade upload
+Geneva file: CSV format, for reconciliation
 
 
 
