@@ -17,283 +17,286 @@ logger = logging.getLogger(__name__)
 
 
 class InvalidTradeType(Exception):
-	pass
+    pass
 
 
 
 def processTradeFile(file, outputDir):
-	return writeToFile(
-				toRecordGroups(
-					createTradeRecords(file)
-				)
-				, outputDir
-				, 'TEST6C'
-				, 'HGNH-QUANT'
-			)
+    return writeToFile(
+                toRecordGroups(
+                    createTradeRecords(file)
+                )
+                , outputDir
+                , 'TEST6C'
+                , 'HGNH-QUANT'
+            )
 
 
 
-def processCashFile(file):
-	pass
+def processCashFile(file, outputDir):
+    print(createCashRecords(file))
 
 
 
 def processPositionFile(file):
-	pass
+    pass
 
 
 
 def createTradeRecords(file):
-	"""
-	[String] file => [List] trade records
-	"""
-	return sortByTradeTime(
-				list(
-					map(toTradeRecord, linesToRecords(fileToLines(file)))
-				)
-			)
+    """
+    [String] file => [List] trade records
+    """
+    return sortByTradeTime(
+                list(
+                    map(toTradeRecord, linesToRecords(fileToLines(file)))
+                )
+            )
 
 
 
 def createCashRecords(file):
-	"""
-	[String] file => [List] cash records
+    """
+    [String] file => [List] cash records
 
-	A cash record is a tuple, looks like ('HKD', 1234.56)
-	"""
-	record = getEndingBalanceRecord(linesToRecords(fileToLines(file)))
-	return dictToList(
-				mergeCashEntries(
-					getCashEntries(
-						record
-					)
-				)
-				, record['']
-			)
+    A cash record is a tuple, looks like ('HKD', 1234.56)
+    """
+    record = getEndingBalanceRecord(linesToRecords(fileToLines(file)))
+    date = xldate_as_datetime(record['Date'], 0)
+
+    def tupleToRecord(t):
+        """
+        [Tuple] (currency, quantity) => [Dictionary] cash record
+
+        The conversion is necessary so that we can reuse the write cash file
+        function.
+        """
+        r = {}
+        r['Currency'] = t[0]
+        r['Quantity'] = t[1]
+        r['Date'] = date 
+        return r 
 
 
-
-def createPositionRecords(file):
-	"""
-	[String] file => [List] position records
-	"""
-
-
+    return list(map(tupleToRecord
+                    , mergeCashEntries(getCashEntries(record)).items()
+                    )
+                )
+    
 
 
 def getEndingBalanceRecord(records):
-	"""
-	[List] records from file => [Dictionary] the record showing ending balance
-	"""
-	return list(
-				filter(
-					lambda record: record['Currency'] == 'Ending Balance'
-					, records
-				)
-			)[0]
+    """
+    [List] records from file => [Dictionary] the record showing ending balance
+    """
+    return list(
+                filter(
+                    lambda record: record['Currency'] == 'Ending Balance'
+                    , records
+                )
+            )[0]
 
 
 
 def getCashEntries(record):
-	"""
-	[Dictionary] cash record showing ending balance => [List] cash records
-	
-	We look for columns that look like: HKD-HKFE, USD-OTHER, etc.
-	"""
-	return filter(
-				lambda record: '-' in record[0]
-				, record.items()
-			)
+    """
+    [Dictionary] cash record showing ending balance => [List] cash records
+    
+    We look for columns that look like: HKD-HKFE, USD-OTHER, etc.
+    """
+    return filter(
+                lambda record: '-' in record[0]
+                , record.items()
+            )
 
 
 
 def mergeCashEntries(entries):
-	"""
-	[Iterable] cash entries => [List] cash records
+    """
+    [Iterable] cash entries => [List] cash records
 
-	A cash entry is a tuple looks like ('HKD-HKFE', 1234), a cash record
-	is a tupe looks like ('HKD', 1234)
-	"""
-	def toCashRecord(cashEntry):
-		key, value = cashEntry
-		return (key.split('-')[0], value)
-
-
-	def addCashRecordToDict(cashDict, record):
-		"""
-		[Dictionary] cashDict, [tuple] cash record => [Dictionary] cashDict
-		
-		It's the accumulator that merges a new cash record to the dictionary
-		holding all cash records.
-		"""
-		key, value = record
-		if key in cashDict:
-			cashDict[key] = cashDict[key] + value
-		else:
-			cashDict[key] = value
-
-		return cashDict
+    A cash entry is a tuple looks like ('HKD-HKFE', 1234), a cash record
+    is a tupe looks like ('HKD', 1234)
+    """
+    def toCashRecord(cashEntry):
+        key, value = cashEntry
+        return (key.split('-')[0], value)
 
 
-	return reduce(addCashRecordToDict, map(toCashRecord, entries), {})
+    def addCashRecordToDict(cashDict, record):
+        """
+        [Dictionary] cashDict, [tuple] cash record => [Dictionary] cashDict
+        
+        It's the accumulator that merges a new cash record to the dictionary
+        holding all cash records.
+        """
+        key, value = record
+        if key in cashDict:
+            cashDict[key] = cashDict[key] + value
+        else:
+            cashDict[key] = value
+
+        return cashDict
+
+
+    return reduce(addCashRecordToDict, map(toCashRecord, entries), {})
 
 
 
 def dictToList(d):
-	"""
-	[Dictionary] d => [List] (key, value)
+    """
+    [Dictionary] d => [List] (key, value)
 
-	Convert a dictionary d into a list of (key, value) pairs
-	"""
-	return [(key, value) for (key, value) in d.items()]
+    Convert a dictionary d into a list of (key, value) pairs
+    """
+    return [(key, value) for (key, value) in d.items()]
 
 
 
 def fileToLines(file):
-	"""
-	[String] file => [List] lines, each line is a list of columns
-	"""
-	wb = open_workbook(filename=file)
-	ws = wb.sheet_by_index(0)
-	lines = []
-	row = 0
-	while row < ws.nrows:
-		thisRow = []
-		column = 0
-		while column < ws.ncols:
-			cellValue = ws.cell_value(row, column)
-			if isinstance(cellValue, str):
-				cellValue = cellValue.strip()
-			thisRow.append(cellValue)
-			column = column + 1
+    """
+    [String] file => [List] lines, each line is a list of columns
+    """
+    wb = open_workbook(filename=file)
+    ws = wb.sheet_by_index(0)
+    lines = []
+    row = 0
+    while row < ws.nrows:
+        thisRow = []
+        column = 0
+        while column < ws.ncols:
+            cellValue = ws.cell_value(row, column)
+            if isinstance(cellValue, str):
+                cellValue = cellValue.strip()
+            thisRow.append(cellValue)
+            column = column + 1
 
-		lines.append(thisRow)
-		row = row + 1
+        lines.append(thisRow)
+        row = row + 1
 
-	return lines
+    return lines
 
 
 
 def linesToRecords(lines):
-	"""
-	[List] lines => [Iterable] records
+    """
+    [List] lines => [Iterable] records
 
-	Using the first row as header, the function converts the remaining lines
-	as records.
-	"""
-	def lineToRecord(line):
-		r = {}
-		for (field, value) in zip(headers, line):
-			r[field] = value
+    Using the first row as header, the function converts the remaining lines
+    as records.
+    """
+    def lineToRecord(line):
+        r = {}
+        for (field, value) in zip(headers, line):
+            r[field] = value
 
-		return r
+        return r
 
-	headers = lines[0]
-	return map(lineToRecord, lines[1:])
+    headers = lines[0]
+    return map(lineToRecord, lines[1:])
 
 
 
 def toTradeRecord(record):
-	"""
-	[Dictionary] record => [Dictionary] Bloomberg upload record
+    """
+    [Dictionary] record => [Dictionary] Bloomberg upload record
 
-	Create a new trade record from the existing record, the trade record has 8
-	necessary fields:
+    Create a new trade record from the existing record, the trade record has 8
+    necessary fields:
 
-	1. BloombergTicker
-	2. Side
-	3. Quantity
-	4. Price
-	5. TradeDate: of type datetime
-	6. SettlementDate: of type datetime
-	7. Commission Code 1: fixed to 'Broker Commission'
-	8. Commission Amt 1: total commission
-	"""
-	r = {}
-	r['BloombergTicker'] = record['Contract']
-	r['Side'] = getTradeSide(record)
-	r['Quantity'] = record['Lots']
-	r['Price'] = record['Trade Price']
-	r['TradeDate'] = xldate_as_datetime(record['Trade Date'], 0)
-	r['SettlementDate'] = xldate_as_datetime(record['Settlement Date'], 0)
-	r['Commission Code 1'] = 'Broker Commission'
-	r['Commission Amt 1'] = record['Commission']
+    1. BloombergTicker
+    2. Side
+    3. Quantity
+    4. Price
+    5. TradeDate: of type datetime
+    6. SettlementDate: of type datetime
+    7. Commission Code 1: fixed to 'Broker Commission'
+    8. Commission Amt 1: total commission
+    """
+    r = {}
+    r['BloombergTicker'] = record['Contract']
+    r['Side'] = getTradeSide(record)
+    r['Quantity'] = record['Lots']
+    r['Price'] = record['Trade Price']
+    r['TradeDate'] = xldate_as_datetime(record['Trade Date'], 0)
+    r['SettlementDate'] = xldate_as_datetime(record['Settlement Date'], 0)
+    r['Commission Code 1'] = 'Broker Commission'
+    r['Commission Amt 1'] = record['Commission']
 
-	r['tradeTime'] = record['Trade Time']	# to be used for sorting
+    r['tradeTime'] = record['Trade Time']   # to be used for sorting
 
-	# Convert to integer if possible, sometimes if the quantity of a futures
-	# contract is a float (like 15.0), BLoomberg may generate an error.
-	if r['Quantity'].is_integer():
-		r['Quantity'] = int(r['Quantity'])
+    # Convert to integer if possible, sometimes if the quantity of a futures
+    # contract is a float (like 15.0), BLoomberg may generate an error.
+    if r['Quantity'].is_integer():
+        r['Quantity'] = int(r['Quantity'])
 
-	return r
+    return r
 
 
 
 def getTradeSide(record):
-	"""
-	[Dictionary] record => [String] side
-	"""
-	tMap = {
-		('B', 'O'): 'Buy',
-		('B', 'C'): 'Cover',
-		('S', 'O'): 'Short',
-		('S', 'C'): 'Sell'
-	}
+    """
+    [Dictionary] record => [String] side
+    """
+    tMap = {
+        ('B', 'O'): 'Buy',
+        ('B', 'C'): 'Cover',
+        ('S', 'O'): 'Short',
+        ('S', 'C'): 'Sell'
+    }
 
-	try:
-		return tMap[(record['B/S'], record['O/C'])]
-	except KeyError:
-		raise InvalidTradeType('{0}'.format(record))
+    try:
+        return tMap[(record['B/S'], record['O/C'])]
+    except KeyError:
+        raise InvalidTradeType('{0}'.format(record))
 
 
 
 def sortByTradeTime(records):
-	"""
-	[List] records => [List] new records
+    """
+    [List] records => [List] new records
 
-	Sort the list of records by their trade date and time, the earlier trades 
-	are put in front. Here we assume the trade date is always the same, therefore
-	we just sort by trade time.
-	"""
-	def takeTradeTime(record):
-		return record['tradeTime']
+    Sort the list of records by their trade date and time, the earlier trades 
+    are put in front. Here we assume the trade date is always the same, therefore
+    we just sort by trade time.
+    """
+    def takeTradeTime(record):
+        return record['tradeTime']
 
-	return sorted(records, key=takeTradeTime)
+    return sorted(records, key=takeTradeTime)
 
 
 
 
 if __name__ == '__main__':
-	import logging.config
-	logging.config.fileConfig('logging.config', disable_existing_loggers=False)
+    import logging.config
+    logging.config.fileConfig('logging.config', disable_existing_loggers=False)
 
-	import argparse
-	parser = argparse.ArgumentParser()
-	parser.add_argument('file', metavar='input file', type=str)
-	parser.add_argument('--type', metavar='file type', choices=['t', 'c', 'p'], 
-						default='t')
-	args = parser.parse_args()
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('file', metavar='input file', type=str)
+    parser.add_argument('--type', metavar='file type', choices=['t', 'c', 'p'], 
+                        default='t')
+    args = parser.parse_args()
 
-	"""
-	To run the program, put a trade/cash/position file in the local directory, 
-	then do:
+    """
+    To run the program, put a trade/cash/position file in the local directory, 
+    then do:
 
-		python henghua.py <file_name> --type <type> 
+        python henghua.py <file_name> --type <type> 
 
-		for type, p for position file, c for cash file, t for trade file, 
-		default is 't'.
-	"""
-	import sys
-	if args.file == None:
-		print('input file name is missing')
-		sys.exit(1)
-	elif args.type == 't':
-		processTradeFile(join(get_current_path(), args.file), get_current_path())
+        for type, p for position file, c for cash file, t for trade file, 
+        default is 't'.
+    """
+    import sys
+    if args.file == None:
+        print('input file name is missing')
+        sys.exit(1)
+    elif args.type == 't':
+        processTradeFile(join(get_current_path(), args.file), get_current_path())
 
-	elif args.type == 'c':
-		# processCashFile(join(get_current_path(), args.file), get_current_path())
+    elif args.type == 'c':
+        processCashFile(join(get_current_path(), args.file), get_current_path())
 
-		print(createCashRecords(join(get_current_path(), 'samples', 'cash_henghua.xlsx')))
-	elif args.type == 'p':
-		processPositionFile(join(get_current_path(), args.file), get_current_path())
+    elif args.type == 'p':
+        processPositionFile(join(get_current_path(), args.file), get_current_path())
