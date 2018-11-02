@@ -143,16 +143,6 @@ def mergeCashEntries(entries):
 
 
 
-def dictToList(d):
-    """
-    [Dictionary] d => [List] (key, value)
-
-    Convert a dictionary d into a list of (key, value) pairs
-    """
-    return [(key, value) for (key, value) in d.items()]
-
-
-
 def fileToLines(file):
     """
     [String] file => [List] lines, each line is a list of columns

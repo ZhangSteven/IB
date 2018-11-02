@@ -40,15 +40,19 @@ class TestHenghua(unittest2.TestCase):
     def testCashRecords(self):
         records = createCashRecords(join(get_current_path(), 'samples', 'cash_henghua.xlsx'))
         self.assertEqual(len(records), 4)
-        sortedRecords = sorted(records)
-        self.assertEqual(sortedRecords[0][0], 'EUR')
-        self.assertAlmostEqual(sortedRecords[0][1], 14879.55)
-        self.assertEqual(sortedRecords[1][0], 'HKD')
-        self.assertAlmostEqual(sortedRecords[1][1], 4600520.48)
-        self.assertEqual(sortedRecords[2][0], 'TWD')
-        self.assertAlmostEqual(sortedRecords[2][1], 17329.36)
-        self.assertEqual(sortedRecords[3][0], 'USD')
-        self.assertAlmostEqual(sortedRecords[3][1], 264762.136)
+
+        def getCurrency(record):
+            return record['Currency']
+
+        sortedRecords = sorted(records, key=getCurrency)
+        self.assertEqual(sortedRecords[0]['Currency'], 'EUR')
+        self.assertAlmostEqual(sortedRecords[0]['Quantity'], 14879.55)
+        self.assertEqual(sortedRecords[1]['Currency'], 'HKD')
+        self.assertAlmostEqual(sortedRecords[1]['Quantity'], 4600520.48)
+        self.assertEqual(sortedRecords[2]['Currency'], 'TWD')
+        self.assertAlmostEqual(sortedRecords[2]['Quantity'], 17329.36)
+        self.assertEqual(sortedRecords[3]['Currency'], 'USD')
+        self.assertAlmostEqual(sortedRecords[3]['Quantity'], 264762.136)
 
 
 
