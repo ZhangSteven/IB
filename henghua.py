@@ -61,11 +61,15 @@ def createCashRecords(file):
 
 	A cash record is a tuple, looks like ('HKD', 1234.56)
 	"""
+	record = getEndingBalanceRecord(linesToRecords(fileToLines(file)))
 	return dictToList(
 				mergeCashEntries(
 					getCashEntries(
-						getEndingBalanceRecord(
-							linesToRecords(fileToLines(file))))))
+						record
+					)
+				)
+				, record['']
+			)
 
 
 
