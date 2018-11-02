@@ -3,9 +3,8 @@
 
 import unittest2
 from os.path import join
-from IB.utility import get_current_path
-from IB.ib import createTradeRecords, toRecordGroups, createPositionRecords, \
-                    createCashRecords
+from IB.utility import get_current_path, toRecordGroups
+from IB.ib import createTradeRecords, createPositionRecords, createCashRecords
 from datetime import datetime
 
 

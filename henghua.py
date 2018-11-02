@@ -10,6 +10,7 @@ from IB.utility import get_current_path, writeToFile, toRecordGroups
 from xlrd import open_workbook
 from xlrd.xldate import xldate_as_datetime
 from os.path import join
+from functools import reduce
 import csv, logging, datetime
 logger = logging.getLogger(__name__)
 
@@ -23,16 +24,124 @@ class InvalidTradeType(Exception):
 def processTradeFile(file, outputDir):
 	return writeToFile(
 				toRecordGroups(
-					sortByTradeTime(
-						list(
-							map(toTradeRecord, linesToRecords(fileToLines(file)))
-						)
-					)
+					createTradeRecords(file)
 				)
 				, outputDir
 				, 'TEST6C'
 				, 'HGNH-QUANT'
 			)
+
+
+
+def processCashFile(file):
+	pass
+
+
+
+def processPositionFile(file):
+	pass
+
+
+
+def createTradeRecords(file):
+	"""
+	[String] file => [List] trade records
+	"""
+	return sortByTradeTime(
+				list(
+					map(toTradeRecord, linesToRecords(fileToLines(file)))
+				)
+			)
+
+
+
+def createCashRecords(file):
+	"""
+	[String] file => [List] cash records
+
+	A cash record is a tuple, looks like ('HKD', 1234.56)
+	"""
+	return dictToList(
+				mergeCashEntries(
+					getCashEntries(
+						getEndingBalanceRecord(
+							linesToRecords(fileToLines(file))))))
+
+
+
+def createPositionRecords(file):
+	"""
+	[String] file => [List] position records
+	"""
+
+
+
+
+def getEndingBalanceRecord(records):
+	"""
+	[List] records from file => [Dictionary] the record showing ending balance
+	"""
+	return list(
+				filter(
+					lambda record: record['Currency'] == 'Ending Balance'
+					, records
+				)
+			)[0]
+
+
+
+def getCashEntries(record):
+	"""
+	[Dictionary] cash record showing ending balance => [List] cash records
+	
+	We look for columns that look like: HKD-HKFE, USD-OTHER, etc.
+	"""
+	return filter(
+				lambda record: '-' in record[0]
+				, record.items()
+			)
+
+
+
+def mergeCashEntries(entries):
+	"""
+	[Iterable] cash entries => [List] cash records
+
+	A cash entry is a tuple looks like ('HKD-HKFE', 1234), a cash record
+	is a tupe looks like ('HKD', 1234)
+	"""
+	def toCashRecord(cashEntry):
+		key, value = cashEntry
+		return (key.split('-')[0], value)
+
+
+	def addCashRecordToDict(cashDict, record):
+		"""
+		[Dictionary] cashDict, [tuple] cash record => [Dictionary] cashDict
+		
+		It's the accumulator that merges a new cash record to the dictionary
+		holding all cash records.
+		"""
+		key, value = record
+		if key in cashDict:
+			cashDict[key] = cashDict[key] + value
+		else:
+			cashDict[key] = value
+
+		return cashDict
+
+
+	return reduce(addCashRecordToDict, map(toCashRecord, entries), {})
+
+
+
+def dictToList(d):
+	"""
+	[Dictionary] d => [List] (key, value)
+
+	Convert a dictionary d into a list of (key, value) pairs
+	"""
+	return [(key, value) for (key, value) in d.items()]
 
 
 
@@ -150,15 +259,6 @@ def sortByTradeTime(records):
 
 
 
-def processCashFile(file):
-	pass
-
-
-
-def processPositionFile(file):
-	pass
-
-
 
 if __name__ == '__main__':
 	import logging.config
@@ -188,6 +288,8 @@ if __name__ == '__main__':
 		processTradeFile(join(get_current_path(), args.file), get_current_path())
 
 	elif args.type == 'c':
-		processCashFile(join(get_current_path(), args.file), get_current_path())
+		# processCashFile(join(get_current_path(), args.file), get_current_path())
+
+		print(createCashRecords(join(get_current_path(), 'samples', 'cash_henghua.xlsx')))
 	elif args.type == 'p':
 		processPositionFile(join(get_current_path(), args.file), get_current_path())
