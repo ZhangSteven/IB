@@ -16,7 +16,7 @@ class TestHenghua(unittest2.TestCase):
 
 
     def testTradeRecords(self):
-        records = createTradeRecords(join(get_current_path(), 'samples', 'henghua_trades.xlsx'))
+        records = createTradeRecords(join(get_current_path(), 'samples', 'trade_henghua.xlsx'))
         self.assertEqual(len(records), 20)
         self.verifyTrade1(records[0])
         self.verifyTrade2(records[19])
@@ -28,7 +28,7 @@ class TestHenghua(unittest2.TestCase):
         After sorting, 7th and 8th records form a box position, therefore all
         records should be separated into 2 groups.
         """
-        groups = toRecordGroups(createTradeRecords(join(get_current_path(), 'samples', 'henghua_trades.xlsx')))
+        groups = toRecordGroups(createTradeRecords(join(get_current_path(), 'samples', 'trade_henghua.xlsx')))
         self.assertEqual(len(groups), 2)
         self.assertEqual(len(groups[0]), 7)
         self.assertEqual(len(groups[1]), 13)

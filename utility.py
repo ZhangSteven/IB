@@ -110,6 +110,8 @@ def dateToString_yyyymmdd(dt):
 def createCsvRow(fields, portfolio, broker, record):
 	"""
 	[List] fields, [Dictionary] trade record => [List] String items in a row
+
+	For trade uploaded to Bloomberg
 	"""
 	def fieldToRow(field):
 		if field == 'Account':
@@ -212,15 +214,6 @@ def formBoxPosition(record, group):
 
 
 
-def toCashFileName(outputDir, dt):
-	"""
-	[String] output dir, [datetime] dt => [String] position file name
-	"""
-	filename = 'IB_' + dateToString_yyyymmdd(dt) + '_cash' + '.csv'
-	return join(outputDir, filename)
-
-
-
 def createCsvRows(fields, records, portfolio):
 	"""
 	[List] fields, [List] position or cash records => [List] rows in csv
@@ -253,3 +246,52 @@ def createCsvRows(fields, records, portfolio):
 	rows = [fields]
 	rows.extend([recordToRow(record) for record in records])
 	return rows
+
+
+
+def writeCashFile(portfolio, records, outputDir):
+	"""
+	[List] cash records => [String] output csv file name
+
+	The cash file will be uploaded to Geneva for reconciliation, it 
+	contains the below fields:
+
+	Portfolio: account code in Geneva (e.g., 40006)
+	Date: [String] yyyy-mm-dd
+	Currency:
+	Quantity:
+
+	A header row is included.
+	"""
+	fields = ['Portfolio', 'Date', 'Currency', 'Balance']
+
+	file = join(outputDir, toFileName(records[0]['Date'], portfolio, 'cash'))
+	writeCsv(file, createCsvRows(fields, records, portfolio))
+
+	return file
+
+
+
+def writePositionFile(portfolio, records, outputDir):
+	"""
+	[List] position records => [String] output csv file name
+
+	The position file will be uploaded to Geneva for reconciliation, it 
+	contains the below fields:
+
+	Portfolio: account code in Geneva (e.g., 40006)
+	Custodian: custodian bank ID
+	Date: [String] yyyy-mm-dd
+	Investment: identifier in Geneva
+	Currency:
+	Quantity:
+	Date: same as Date above
+
+	A header row is included.
+	"""
+	fields = ['Portfolio', 'Date', 'Investment', 'Currency', 'Quantity']
+
+	file = join(outputDir, toFileName(records[0]['Date'], portfolio, 'position'))
+	writeCsv(file, createCsvRows(fields, records, portfolio))
+
+	return file

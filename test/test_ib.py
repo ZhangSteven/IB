@@ -53,7 +53,7 @@ class TestIB(unittest2.TestCase):
 
 
     def testHolding(self):
-        records = createPositionRecords(join(get_current_path(), 'samples', 'position.csv'))
+        records = createPositionRecords(join(get_current_path(), 'samples', 'position_IB.csv'))
         self.assertEqual(len(records), 12)
         self.verifyPosition1(records[0])
         self.verifyPosition2(records[11])
@@ -61,7 +61,7 @@ class TestIB(unittest2.TestCase):
 
 
     def testCash(self):
-        records = createCashRecords(join(get_current_path(), 'samples', 'cash.csv'))
+        records = createCashRecords(join(get_current_path(), 'samples', 'cash_IB.csv'))
         self.assertEqual(len(records), 3)
         self.assertAlmostEqual(records[0]['Quantity'], 29056)
         self.assertEqual(records[0]['Currency'], 'EUR')

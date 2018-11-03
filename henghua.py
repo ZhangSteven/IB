@@ -6,7 +6,8 @@
 # 2. Geneva reconciliation file.
 #
 
-from IB.utility import get_current_path, writeToFile, toRecordGroups
+from IB.utility import get_current_path, writeToFile, toRecordGroups, \
+                        writeCashFile
 from xlrd import open_workbook
 from xlrd.xldate import xldate_as_datetime
 from os.path import join
@@ -22,6 +23,7 @@ class InvalidTradeType(Exception):
 
 
 def processTradeFile(file, outputDir):
+    logger.info('processTradeFile(): {0}'.format(file))
     return writeToFile(
                 toRecordGroups(
                     createTradeRecords(file)
@@ -34,7 +36,8 @@ def processTradeFile(file, outputDir):
 
 
 def processCashFile(file, outputDir):
-    print(createCashRecords(file))
+    logger.info('processCashFile(): {0}'.format(file))
+    return writeCashFile('40006-C', createCashRecords(file), outputDir)
 
 
 

@@ -7,7 +7,8 @@
 #
 
 from utils.utility import writeCsv
-from IB.utility import get_current_path, toRecordGroups, writeToFile
+from IB.utility import get_current_path, toRecordGroups, writeToFile, \
+						writeCashFile, writePositionFile
 from os.path import join
 import csv, logging, datetime
 logger = logging.getLogger(__name__)
@@ -49,7 +50,7 @@ def processPositionFile(file, outputDir):
 	[String] file, [String] outputDir => [String] output csv file
 	"""
 	logger.info('processPositionFile(): {0}'.format(file))
-	return writePositionFile(createPositionRecords(file), outputDir)
+	return writePositionFile('40006-B', createPositionRecords(file), outputDir)
 
 
 
@@ -58,7 +59,7 @@ def processCashFile(file, outputDir):
 	[String] file, [String] outputDir => [String] output csv file
 	"""
 	logger.info('processCashFile(): {0}'.format(file))
-	return writeCashFile(createCashRecords(file), outputDir)
+	return writeCashFile('40006-B', createCashRecords(file), outputDir)
 
 
 
@@ -413,114 +414,6 @@ def stringToDate(dateString):
 	"""
 	return datetime.datetime(int(dateString[0:4]), int(dateString[4:6]), 
 								int(dateString[6:]))
-
-
-
-def writePositionFile(records, outputDir):
-	"""
-	[List] position records => [String] output csv file name
-
-	The position file will be uploaded to Geneva for reconciliation, it 
-	contains the below fields:
-
-	Portfolio: account code in Geneva (e.g., 40006)
-	Custodian: custodian bank ID
-	Date: [String] yyyy-mm-dd
-	Investment: identifier in Geneva
-	Currency:
-	Quantity:
-	Date: same as Date above
-
-	A header row is included.
-	"""
-	fields = ['Portfolio', 'Custodian', 'Date', 'Investment', 'Currency',
-				'Quantity']
-
-	file = toPositionFileName(outputDir, records[0]['Date'])
-	writeCsv(file, createCsvRows(fields, records))
-
-	return file
-
-
-
-def writeCashFile(records, outputDir):
-	"""
-	[List] cash records => [String] output csv file name
-
-	The cash file will be uploaded to Geneva for reconciliation, it 
-	contains the below fields:
-
-	Portfolio: account code in Geneva (e.g., 40006)
-	Custodian: custodian bank ID
-	Date: [String] yyyy-mm-dd
-	Investment: identifier in Geneva
-	Currency:
-	Quantity:
-	Date: same as Date above
-
-	A header row is included.
-	"""
-	fields = ['Portfolio', 'Custodian', 'Date', 'Currency', 'Balance']
-
-	file = toCashFileName(outputDir, records[0]['Date'])
-	writeCsv(file, createCsvRows(fields, records))
-
-	return file
-
-
-
-def toPositionFileName(outputDir, dt):
-	"""
-	[String] output dir, [datetime] dt => [String] position file name
-	"""
-	filename = 'IB_' + dateToString_yyyymmdd(dt) + '_position' + '.csv'
-	return join(outputDir, filename)
-
-
-
-def toCashFileName(outputDir, dt):
-	"""
-	[String] output dir, [datetime] dt => [String] position file name
-	"""
-	filename = 'IB_' + dateToString_yyyymmdd(dt) + '_cash' + '.csv'
-	return join(outputDir, filename)
-
-
-
-def createCsvRows(fields, records):
-	"""
-	[List] fields, [List] position or cash records => [List] rows in csv
-	
-	The first row is the headers (fields)
-	"""
-	def fieldToColumn(field, record):
-		if field == 'Portfolio':
-			return 'TEST6'
-		elif field == 'Custodian':
-			return 'IB'
-
-		elif field == 'Investment':	# for position record
-			if record['BloombergTicker'].endswith(' Equity'):
-				return record['BloombergTicker'][:-7]	# strip off ' Equity'
-			else:
-				return record['BloombergTicker']
-
-		elif field == 'Balance':	# for cash record
-			return record['Quantity']
-		
-		elif field == 'Date':
-			return dateToString_yyyymmdd(record['Date'])
-		else:
-			return record[field]
-
-
-	def recordToRow(record):
-		return [fieldToColumn(field, record) for field in fields]
-
-
-	rows = [fields]
-	rows.extend([recordToRow(record) for record in records])
-	return rows
 
 
 
