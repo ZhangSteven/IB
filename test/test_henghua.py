@@ -4,7 +4,7 @@
 import unittest2
 from os.path import join
 from IB.utility import get_current_path, toRecordGroups
-from IB.henghua import createTradeRecords, createCashRecords
+from IB.henghua import createTradeRecords, createCashRecords, createPositionRecords
 from datetime import datetime
 
 
@@ -56,11 +56,11 @@ class TestHenghua(unittest2.TestCase):
 
 
 
-    # def testHolding(self):
-    #     records = createPositionRecords(join(get_current_path(), 'samples', 'position.csv'))
-    #     self.assertEqual(len(records), 12)
-    #     self.verifyPosition1(records[0])
-    #     self.verifyPosition2(records[11])
+    def testPositionRecords(self):
+        records = createPositionRecords(join(get_current_path(), 'samples', 'position_henghua.xlsx'))
+        self.assertEqual(len(records), 19)
+        self.verifyPosition1(records[0])
+        self.verifyPosition2(records[17])
 
 
 
@@ -121,17 +121,16 @@ class TestHenghua(unittest2.TestCase):
 
 
 
-    # def verifyPosition1(self, record):
-    #     self.assertEqual(record['Currency'], 'USD')
-    #     self.assertEqual(record['BloombergTicker'], 'SPY US Equity')
-    #     self.assertAlmostEqual(record['Quantity'], 500)
-    #     self.assertEqual(record['Date'], datetime(2018,10,26))
+    def verifyPosition1(self, record):
+        self.assertEqual(record['Currency'], 'HKD')
+        self.assertEqual(record['BloombergTicker'], 'HIV8 Index')
+        self.assertAlmostEqual(record['Quantity'], 1)
+        self.assertEqual(record['Date'], datetime(2018,10,25))
 
 
 
-    # def verifyPosition2(self, record):
-    #     self.assertEqual(record['Currency'], 'USD')
-    #     self.assertEqual(record['BloombergTicker'], 'S H9 Comdty')
-    #     self.assertAlmostEqual(record['Quantity'], -24)
-    #     self.assertEqual(record['Date'], datetime(2018,10,26))
-
+    def verifyPosition2(self, record):
+        self.assertEqual(record['Currency'], 'USD')
+        self.assertEqual(record['BloombergTicker'], 'ESU9 Index')
+        self.assertAlmostEqual(record['Quantity'], -18)
+        self.assertEqual(record['Date'], datetime(2018,10,25))

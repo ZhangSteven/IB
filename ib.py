@@ -264,8 +264,8 @@ def toPositionRecord(record):
 	"""
 	[Dictionary] record => [Dictionary] position record
 
-	Create a new position record from the existing record, the record has 8
-	fields:
+	Create a new position record from the existing record, the record has the
+	below fields:
 
 	1. BloombergTicker:
 	2. Quantity: float number, use negative to indicate short position

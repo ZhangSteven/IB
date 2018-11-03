@@ -7,7 +7,7 @@
 #
 
 from IB.utility import get_current_path, writeToFile, toRecordGroups, \
-                        writeCashFile
+                        writeCashFile, writePositionFile
 from xlrd import open_workbook
 from xlrd.xldate import xldate_as_datetime
 from os.path import join
@@ -41,8 +41,9 @@ def processCashFile(file, outputDir):
 
 
 
-def processPositionFile(file):
-    pass
+def processPositionFile(file, outputDir):
+    logger.info('processPositionFile(): {0}'.format(file))
+    return writePositionFile('40006-C', createPositionRecords(file), outputDir)
 
 
 
@@ -51,10 +52,16 @@ def createTradeRecords(file):
     [String] file => [List] trade records
     """
     return sortByTradeTime(
-                list(
-                    map(toTradeRecord, linesToRecords(fileToLines(file)))
-                )
+                list(map(toTradeRecord, linesToRecords(fileToLines(file))))
             )
+
+
+
+def createPositionRecords(file):
+    """
+    [String] file => [List] position records
+    """
+    return list(map(toPositionRecord, linesToRecords(fileToLines(file))))
 
 
 
@@ -187,6 +194,33 @@ def linesToRecords(lines):
 
     headers = lines[0]
     return map(lineToRecord, lines[1:])
+
+
+
+def toPositionRecord(record):
+    """
+    [Dictionary] record => [Dictionary] position record
+
+    Create a new position record from the line record, position record has the
+    below fields:
+
+    1. BloombergTicker:
+    2. Quantity: float number, use negative to indicate short position
+    3. Currency
+    4. Date: of type datetime
+    """
+    def toPositionQuantity(buySell, quantity):
+        if buySell == 'B':
+            return quantity
+        else:
+            return -1 * quantity
+
+    r = {}
+    r['BloombergTicker'] = record['Product']
+    r['Quantity'] = toPositionQuantity(record['B/S'], record['Lots'])
+    r['Currency'] = record['Currency'].split('_')[1]
+    r['Date'] = xldate_as_datetime(record['Date'], 0)
+    return r
 
 
 
