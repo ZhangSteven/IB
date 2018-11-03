@@ -45,7 +45,7 @@ def writeToFile(recordGroups, outputDir, portfolio, broker):
 
 	outputFiles = []
 	for (index, group) in enumerate(recordGroups):
-		file = toFileName(index, group, outputDir, portfolio)
+		file = createTradeFileName(index, group, outputDir, portfolio)
 		writeCsv(file, [createCsvRow(fields, portfolio, broker, record) for record in group])
 		outputFiles.append(file)
 
@@ -53,8 +53,13 @@ def writeToFile(recordGroups, outputDir, portfolio, broker):
 
 
 
-def toFileName(index, group, outputDir, portfolio):
-	return join(outputDir, createTradeFileName(group[0]['TradeDate'], portfolio, createSuffix(index)))
+def createTradeFileName(index, group, outputDir, portfolio):
+	return join(outputDir
+				, toFileName(
+					group[0]['TradeDate']
+					, portfolio
+					, 'trade'
+					, createSuffix(index)))
 
 
 
@@ -66,13 +71,19 @@ def createSuffix(i):
 
 
 
-def createTradeFileName(dt, portfolio, suffix=''):
+def toFileName(dt, portfolio, fileType, suffix=''):
 	"""
-	[datetime] dt => [String] full path file name of the trade file
+	[datetime] dt, 
+	[String] portfolio, the portfolio id
+	[String] fileType, trade, cash or position
+	[String] suffix
 
-	IB_trades_yyyy-mm-dd.csv
+	=> [String] final file name (full path)
+
+	e.g., 40006-B_trade_yyyy-mm-dd.csv
 	"""
-	return portfolio + '_trades_' + dateToString_yyyymmdd(dt) + suffix + '.csv'
+	return portfolio + '_' + fileType + '_' + dateToString_yyyymmdd(dt) + \
+			suffix + '.csv'
 
 
 
@@ -90,7 +101,7 @@ def dateToString_yyyymmdd(dt):
 	"""
 	[datetime] dt => [String] yyyy-mm-dd
 
-	This format is required by Geneva cash or position reconciliation
+	This format is required for cash or position file
 	"""
 	return str(dt.year) + '-' + str(dt.month) + '-' + str(dt.day)
 
@@ -201,3 +212,44 @@ def formBoxPosition(record, group):
 
 
 
+def toCashFileName(outputDir, dt):
+	"""
+	[String] output dir, [datetime] dt => [String] position file name
+	"""
+	filename = 'IB_' + dateToString_yyyymmdd(dt) + '_cash' + '.csv'
+	return join(outputDir, filename)
+
+
+
+def createCsvRows(fields, records, portfolio):
+	"""
+	[List] fields, [List] position or cash records => [List] rows in csv
+	
+	The first row is the headers (fields)
+	"""
+	def fieldToColumn(field, record):
+		if field == 'Portfolio':
+			return portfolio
+
+		elif field == 'Investment':	# for position record
+			if record['BloombergTicker'].endswith(' Equity'):
+				return record['BloombergTicker'][:-7]	# strip off ' Equity'
+			else:
+				return record['BloombergTicker']
+
+		elif field == 'Balance':	# for cash record
+			return record['Quantity']
+		
+		elif field == 'Date':
+			return dateToString_yyyymmdd(record['Date'])
+		else:
+			return record[field]
+
+
+	def recordToRow(record):
+		return [fieldToColumn(field, record) for field in fields]
+
+
+	rows = [fields]
+	rows.extend([recordToRow(record) for record in records])
+	return rows

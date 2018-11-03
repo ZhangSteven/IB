@@ -27,7 +27,7 @@ def processTradeFile(file, outputDir):
                     createTradeRecords(file)
                 )
                 , outputDir
-                , 'TEST6C'
+                , '40006-C'
                 , 'HGNH-QUANT'
             )
 

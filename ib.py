@@ -111,7 +111,7 @@ def processTradeFile(file, outputDir=get_current_path()):
 					createTradeRecords(file)
 				)
 				, outputDir
-				, 'TEST6'
+				, '40006-B'
 				, 'IB-QUANT'
 			)
 
