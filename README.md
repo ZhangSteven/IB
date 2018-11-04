@@ -11,6 +11,10 @@ henghua.py: Heng Hua International (HGNH)
 gf.py: Guang Fa Securities
 
 
+# ver 0.21, 2018-11-04
+finished interface with reconciliation helper
+
+
 # ver 0.2, 2018-11-03
 Broker Henghua finished
 

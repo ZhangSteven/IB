@@ -290,8 +290,7 @@ def writeCashFile(portfolio, records, outputDir):
 	"""
 	[List] cash records => [String] output csv file name
 
-	The cash file will be uploaded to Geneva for reconciliation, it 
-	contains the below fields:
+	The cash file is for Geneva reconciliation, it contains the below fields:
 
 	Portfolio: account code in Geneva (e.g., 40006)
 	Date: [String] yyyy-mm-dd
@@ -313,8 +312,7 @@ def writePositionFile(portfolio, records, outputDir):
 	"""
 	[List] position records => [String] output csv file name
 
-	The position file will be uploaded to Geneva for reconciliation, it 
-	contains the below fields:
+	The position file is for Geneva reconciliation, it contains the below fields:
 
 	Portfolio: account code in Geneva (e.g., 40006)
 	Custodian: custodian bank ID
