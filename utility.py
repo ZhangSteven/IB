@@ -7,6 +7,7 @@ from os.path import join
 
 
 
+
 def get_current_path():
 	"""
 	Get the absolute path to the directory where this module is in.
@@ -16,6 +17,42 @@ def get_current_path():
 	http://stackoverflow.com/questions/3430372/how-to-get-full-path-of-current-files-directory-in-python
 	"""
 	return os.path.dirname(os.path.abspath(__file__))
+
+
+
+def isCashFile(file):
+	"""
+	[String] file => [Bool] yesno
+
+	file is a full path file name.
+	"""
+	if fileNameWithoutPath(file).split('.')[0].startswith('cash'):
+		return True
+	else:
+		return False
+
+
+
+def isPositionFile(file):
+	"""
+	[String] file => [Bool] yesno
+
+	file is a full path file name.
+	"""
+	if fileNameWithoutPath(file).split('.')[0].startswith('position'):
+		return True
+	else:
+		return False
+
+
+
+def fileNameWithoutPath(file):
+	"""
+	[String] file => [String] file
+
+	C:\temp\file1.txt => file1.txt
+	"""
+	return file.split('\\')[-1]
 
 
 

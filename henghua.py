@@ -7,7 +7,8 @@
 #
 
 from IB.utility import get_current_path, writeToFile, toRecordGroups, \
-                        writeCashFile, writePositionFile
+                        writeCashFile, writePositionFile, isCashFile, \
+                        isPositionFile
 from xlrd import open_workbook
 from xlrd.xldate import xldate_as_datetime
 from os.path import join
@@ -19,6 +20,28 @@ logger = logging.getLogger(__name__)
 
 class InvalidTradeType(Exception):
     pass
+
+class InvalidFileName(Exception):
+    pass
+
+
+
+def processCashPositionFile(file, outputDir=get_current_path()):
+    """
+    [String] cash or position file => [String] output file
+
+    Convert an IB cash or position file to cash or position file ready
+    for Geneva reconciliation.
+
+    The rule is: cash file name always starts with 'cash', position file
+    name always starts with 'position'.
+    """
+    if isCashFile(file):
+        return processCashFile(file, outputDir)
+    elif isPositionFile(file):
+        return processPositionFile(file, outputDir)
+    else:
+        raise InvalidFileName(file)
 
 
 
@@ -302,28 +325,23 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('file', metavar='input file', type=str)
-    parser.add_argument('--type', metavar='file type', choices=['t', 'c', 'p'], 
-                        default='t')
+    parser.add_argument('--type', metavar='file type', choices=['t', 'pc'], 
+                        default='pc')
     args = parser.parse_args()
 
     """
     To run the program, put a trade/cash/position file in the local directory, 
     then do:
 
-        python henghua.py <file_name> --type <type> 
-
-        for type, p for position file, c for cash file, t for trade file, 
-        default is 't'.
+        python ib.py <file_name> --type c (t for trade file
+                                          , pc for position or trade file
+                                          , default is 'pc')
     """
     import sys
     if args.file == None:
         print('input file name is missing')
         sys.exit(1)
     elif args.type == 't':
-        processTradeFile(join(get_current_path(), args.file), get_current_path())
-
-    elif args.type == 'c':
-        processCashFile(join(get_current_path(), args.file), get_current_path())
-
-    elif args.type == 'p':
-        processPositionFile(join(get_current_path(), args.file), get_current_path())
+        processTradeFile(join(get_current_path(), args.file))
+    else:
+        processCashPositionFile(join(get_current_path(), args.file), get_current_path())

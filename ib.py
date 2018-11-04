@@ -8,7 +8,8 @@
 
 from utils.utility import writeCsv
 from IB.utility import get_current_path, toRecordGroups, writeToFile, \
-						writeCashFile, writePositionFile
+						writeCashFile, writePositionFile, isCashFile, \
+                        isPositionFile
 from os.path import join
 import csv, logging, datetime
 logger = logging.getLogger(__name__)
@@ -25,23 +26,26 @@ class InvalidTradeSide(Exception):
 	pass
 
 class InvalidFileName(Exception):
-	pass
+    pass
 
 
 
 def processCashPositionFile(file, outputDir=get_current_path()):
-	"""
-	[String] cash or position file => [String] output file
+    """
+    [String] cash or position file => [String] output file
 
-	Convert an IB cash or position file to cash or position file ready
-	for Geneva reconciliation.
-	"""
-	if isCashFile(file):
-		return processCashFile(file, outputDir)
-	elif isPositionFile(file):
-		return processPositionFile(file, outputDir)
-	else:
-		raise InvalidFileName(file)
+    Convert an IB cash or position file to cash or position file ready
+    for Geneva reconciliation.
+
+    The rule is: cash file name always starts with 'cash', position file
+    name always starts with 'position'.
+    """
+    if isCashFile(file):
+        return processCashFile(file, outputDir)
+    elif isPositionFile(file):
+        return processPositionFile(file, outputDir)
+    else:
+        raise InvalidFileName(file)
 
 
 
@@ -60,42 +64,6 @@ def processCashFile(file, outputDir):
 	"""
 	logger.info('processCashFile(): {0}'.format(file))
 	return writeCashFile('40006-B', createCashRecords(file), outputDir)
-
-
-
-def isCashFile(file):
-	"""
-	[String] file => [Bool] yesno
-
-	file is a full path file name.
-	"""
-	if 'cash' in fileNameWithoutPath(file).split('.')[0]:
-		return True
-	else:
-		return False
-
-
-
-def isPositionFile(file):
-	"""
-	[String] file => [Bool] yesno
-
-	file is a full path file name.
-	"""
-	if 'position' in fileNameWithoutPath(file).split('.')[0]:
-		return True
-	else:
-		return False
-
-
-
-def fileNameWithoutPath(file):
-	"""
-	[String] file => [String] file
-
-	C:\temp\file1.txt => file1.txt
-	"""
-	return file.split('\\')[-1]
 
 
 
@@ -425,18 +393,17 @@ if __name__ == '__main__':
 	import argparse
 	parser = argparse.ArgumentParser()
 	parser.add_argument('file', metavar='input file', type=str)
-	parser.add_argument('--type', metavar='file type', choices=['t', 'c', 'p'], 
-						default='t')
+	parser.add_argument('--type', metavar='file type', choices=['t', 'pc'], 
+						default='pc')
 	args = parser.parse_args()
 
 	"""
 	To run the program, put a trade/cash/position file in the local directory, 
 	then do:
 
-		python ib.py <file_name> --type c (p for position file 
-										  , c for cash file
-										  , t for trade file
-										  , default is 't')
+		python ib.py <file_name> --type c (t for trade file
+                                          , pc for position or trade file
+										  , default is 'pc')
 	"""
 	import sys
 	if args.file == None:
@@ -444,7 +411,5 @@ if __name__ == '__main__':
 		sys.exit(1)
 	elif args.type == 't':
 		processTradeFile(join(get_current_path(), args.file))
-	elif args.type == 'c':
-		processCashFile(join(get_current_path(), args.file), get_current_path())
-	elif args.type == 'p':
-		processPositionFile(join(get_current_path(), args.file), get_current_path())
+	else:
+		processCashPositionFile(join(get_current_path(), args.file), get_current_path())
