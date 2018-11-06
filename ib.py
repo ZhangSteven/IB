@@ -242,6 +242,8 @@ def toPositionRecord(record):
 	"""
 	r = {}
 	r['BloombergTicker'] = createTicker(record)
+	r['InvestmentType'] = getInvestmentType(record['AssetClass'])
+	r['Underlying'] = getUnderlying(r['BloombergTicker'])
 	r['Quantity'] = float(record['Quantity'])
 	r['Currency'] = record['CurrencyPrimary']
 	r['Date'] = stringToDate(record['ReportDate'])
@@ -286,6 +288,17 @@ def createTicker(record):
 		return createFuturesTicker(record)
 	else:
 		raise UnhandledTradeType('record: {0}'.format(record))
+
+
+
+def getInvestmentType(assetClass):
+	"""
+	[String] assetClass => [String] Investment type
+	"""
+	if assetClass == 'FUT':
+		return 'futures'
+	else:
+		return ''
 
 
 
