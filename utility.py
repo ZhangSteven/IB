@@ -324,8 +324,7 @@ def writePositionFile(portfolio, records, outputDir):
 
 	A header row is included.
 	"""
-	fields = ['Portfolio', 'Date', 'Investment', 'InvestmentType'
-				, 'Underlying', 'Currency', 'Quantity']
+	fields = ['Portfolio', 'Date', 'Investment', 'Currency', 'Quantity']
 
 	file = join(outputDir, toFileName(records[0]['Date'], portfolio, 'position'))
 	writeCsv(file, createCsvRows(fields, records, portfolio))
