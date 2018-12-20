@@ -26,7 +26,7 @@ def isCashFile(file):
 
 	file is a full path file name.
 	"""
-	if fileNameWithoutPath(file).split('.')[0].startswith('cash'):
+	if fileNameWithoutPath(file).split('.')[0].lower().startswith('cash'):
 		return True
 	else:
 		return False
@@ -39,7 +39,7 @@ def isPositionFile(file):
 
 	file is a full path file name.
 	"""
-	if fileNameWithoutPath(file).split('.')[0].startswith('position'):
+	if fileNameWithoutPath(file).split('.')[0].lower().startswith('position'):
 		return True
 	else:
 		return False
