@@ -8,8 +8,7 @@
 
 from utils.utility import writeCsv
 from IB.utility import get_current_path, toRecordGroups, writeToFile, \
-						writeCashFile, writePositionFile, isCashFile, \
-                        isPositionFile
+						writeCashFile, writePositionFile
 from os.path import join
 import csv, logging, datetime
 logger = logging.getLogger(__name__)
@@ -49,12 +48,43 @@ def processCashPositionFile(file, outputDir=get_current_path()):
 
 
 
+def isCashFile(fn):
+	"""
+	[String] file name => [Bool] is this a cash file
+	"""
+	tokens = fn.split('.')
+	if len(tokens) > 2 and tokens[2] == 'cash':
+		return True 
+
+	return False
+
+
+
+def isPositionFile(fn):
+	"""
+	[String] file name => [Bool] is this a position file
+	"""
+	tokens = fn.split('.')
+	if len(tokens) > 2 and tokens[2] == 'position':
+		return True 
+
+	return False
+
+
+
 def processPositionFile(file, outputDir):
 	"""
 	[String] file, [String] outputDir => [String] output csv file
+
+	if there are no records, i.e., no content to write, no csv file
+	is written and return value will be empty string.
 	"""
 	logger.info('processPositionFile(): {0}'.format(file))
-	return writePositionFile('40006-B', createPositionRecords(file), outputDir)
+	records = createPositionRecords(file)
+	if len(records) > 0:
+		return writePositionFile('40006-B', records, outputDir)
+	else:
+		return ''
 
 
 
@@ -63,7 +93,11 @@ def processCashFile(file, outputDir):
 	[String] file, [String] outputDir => [String] output csv file
 	"""
 	logger.info('processCashFile(): {0}'.format(file))
-	return writeCashFile('40006-B', createCashRecords(file), outputDir)
+	records = createCashRecords(file)
+	if len(records) > 0:
+		return writeCashFile('40006-B', records, outputDir)
+	else:
+		return ''
 
 
 
@@ -199,6 +233,7 @@ def toTradeRecord(record):
 	6. SettlementDate: of type datetime
 	7. Commission Code 1: fixed to 'Broker Commission'
 	8. Commission Amt 1: total commission
+	9. Strategy: strategy of the trade
 	"""
 	r = {}
 	r['BloombergTicker'] = createTicker(record)
@@ -218,6 +253,7 @@ def toTradeRecord(record):
 	# under the name of 'Broker Commission'
 	r['Commission Code 1'] = 'Broker Commission'
 	r['Commission Amt 1'] = abs(float(record['Commission']))
+	r['Strategy'] = 'TRADING'
 
 	# Convert to integer if possible, sometimes if the quantity of a futures
 	# contract is a float (like 15.0), BLoomberg may generate an error.

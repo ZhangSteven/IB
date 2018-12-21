@@ -95,7 +95,9 @@ def createCashRecords(file):
     A cash record is a tuple, looks like ('HKD', 1234.56)
     """
     record = getEndingBalanceRecord(linesToRecords(fileToLines(file)))
-    date = xldate_as_datetime(record['Date'], 0)
+
+    # date = xldate_as_datetime(record['Date'], 0)
+    date = get_datetime(record['Date'])
 
     def tupleToRecord(t):
         """
@@ -116,6 +118,25 @@ def createCashRecords(file):
                     )
                 )
     
+
+
+def get_datetime(dt):
+    """
+    dt: either a float or string
+
+    return: datetime object converted from dt.
+
+    In Excel, sometimes when we convert a cell to "Date" format, it is still
+    read as a string instead of float. In this case, we treat it as a string 
+    of format "mm/dd/yyyy".
+    """
+    if isinstance(dt, str):
+        tokens = dt.split('/')
+        return datetime.datetime(int(tokens[2]), int(tokens[0]), int(tokens[1]))
+
+    # if not, then it should be "Date" format in Excel, actually a float
+    return xldate_as_datetime(dt, 0)
+
 
 
 def getEndingBalanceRecord(records):
@@ -262,6 +283,7 @@ def toTradeRecord(record):
     6. SettlementDate: of type datetime
     7. Commission Code 1: fixed to 'Broker Commission'
     8. Commission Amt 1: total commission
+    9. Strategy: strategy of the trade.
     """
     r = {}
     r['BloombergTicker'] = record['Contract']
@@ -272,6 +294,7 @@ def toTradeRecord(record):
     r['SettlementDate'] = xldate_as_datetime(record['Settlement Date'], 0)
     r['Commission Code 1'] = 'Broker Commission'
     r['Commission Amt 1'] = record['Commission']
+    r['Strategy'] = 'TRADING'
 
     r['tradeTime'] = record['Trade Time']   # to be used for sorting
 
@@ -342,6 +365,7 @@ if __name__ == '__main__':
         print('input file name is missing')
         sys.exit(1)
     elif args.type == 't':
-        processTradeFile(join(get_current_path(), args.file))
+        processTradeFile(join(get_current_path(), args.file), get_current_path())
     else:
         processCashPositionFile(join(get_current_path(), args.file), get_current_path())
+

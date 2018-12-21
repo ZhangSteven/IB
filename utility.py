@@ -78,7 +78,7 @@ def writeToFile(recordGroups, outputDir, portfolio, broker):
 	"""
 	fields = ['Account', 'BloombergTicker', 'Broker', 'Side', 'Quantity', 
 				'Price', 'TradeDate', 'SettlementDate', 'Commission Code 1',
-				'Commission Amt 1']
+				'Commission Amt 1', 'Strategy']
 
 	outputFiles = []
 	for (index, group) in enumerate(recordGroups):
