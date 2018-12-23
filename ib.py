@@ -344,7 +344,8 @@ def createFuturesTicker(record):
 		'RB' : ('XB', 'Comdty'),	# Gasoline RBOB futures (NYMEX)
 		'RBOB' : ('PG', 'Comdty'),	# Gasoline RBOB futures (ICE)
 		'QG' : ('EO', 'Comdty'), 	# E-Mini Natural Gas futures
-		'ZS' : ('S ', 'Comdty')		# Soybean
+		'ZS' : ('S ', 'Comdty'),	# Soybean
+		'GC' : ('GC', 'Comdty')		# Gold
 	}
 
 	mMap = {	# mapping month to Bloomberg Ticker's 3rd letter
