@@ -333,19 +333,19 @@ def createFuturesTicker(record):
 	"""
 	bMap = {	# mapping underlying to Bloombert Ticker's first 2 letters,
 				# and index or comdty
-		'VIX': ('VX', 'Index'),
-		'HSI': ('HI', 'Index'),
-		'MHI': ('HU', 'Index'), 	# mini Hang Seng index futures
-		'DAX': ('GX', 'Index'),
-		'ES' : ('ES', 'Index'),		# E-Mini S&P500 index futures
-		'NQ' : ('NQ', 'Index'),		# E-Mini NASDAQ 100 index futures
-		'CL' : ('CL', 'Comdty'),	# Light Sweet Crude Oil (WTI)
-		'PL' : ('PL', 'Comdty'),	# Platinum futures
-		'RB' : ('XB', 'Comdty'),	# Gasoline RBOB futures (NYMEX)
-		'RBOB' : ('PG', 'Comdty'),	# Gasoline RBOB futures (ICE)
-		'QG' : ('EO', 'Comdty'), 	# E-Mini Natural Gas futures
-		'ZS' : ('S ', 'Comdty'),	# Soybean
-		'GC' : ('GC', 'Comdty')		# Gold
+		('HSI', 50): ('HI', 'Index'),
+		('MHI', 10): ('HU', 'Index'), 		# mini Hang Seng index futures
+		('DAX', 25): ('GX', 'Index'),		# DAX index futures
+		('DAX',  5): ('DFW', 'Index'),		# mini DAX index
+		('ES' , 50): ('ES', 'Index'),		# E-Mini S&P500 index futures
+		('NQ' , 20): ('NQ', 'Index'),		# E-Mini NASDAQ 100 index futures
+		('CL' , 1000): ('CL', 'Comdty'),	# Light Sweet Crude Oil (WTI)
+		('PL' , 50): ('PL', 'Comdty'),		# Platinum futures
+		('RB' , 420): ('XB', 'Comdty'),		# Gasoline RBOB futures (NYMEX)
+		('RBOB',420) : ('PG', 'Comdty'),	# Gasoline RBOB futures (ICE)
+		('QG' , 2500) : ('EO', 'Comdty'), 	# E-Mini Natural Gas futures
+		('ZS' , 50) : ('S ', 'Comdty'),		# Soybean
+		('GC' , 100): ('GC', 'Comdty')		# Gold
 	}
 
 	mMap = {	# mapping month to Bloomberg Ticker's 3rd letter
@@ -365,7 +365,7 @@ def createFuturesTicker(record):
 	}
 
 	month, year = getMonthYear(record['Description'])
-	prefix, suffix = bMap[record['UnderlyingSymbol']]
+	prefix, suffix = bMap[(record['UnderlyingSymbol'], int(record['Multiplier']))]
 	return prefix + mMap[month] + year[1] + ' ' + suffix
 
 	
@@ -398,16 +398,28 @@ def createSide(buySell, code):
 	sell,closing trade (C) => Sell
 	"""
 	codes = code.split(';')
-	if buySell == 'BUY' and ('O' in codes or 'D' in codes):
-		return 'Buy'
-	elif buySell == 'BUY' and 'C' in codes:
+	# if buySell == 'BUY' and ('O' in codes or 'D' in codes):
+	# 	return 'Buy'
+	# elif buySell == 'BUY' and 'C' in codes:
+	# 	return 'Cover'
+	# elif buySell == 'SELL' and 'O' in codes:
+	# 	return 'Short'
+	# elif buySell == 'SELL':
+	# 	return 'Sell'
+	# else:
+	# 	raise InvalidTradeSide('{0}, {1}'.format(buySell, code))
+
+	c_map = {
+		'BUY' : 'Buy',
+		'SELL': 'Sell'
+	}
+
+	if buySell == 'BUY' and 'C' in codes:
 		return 'Cover'
 	elif buySell == 'SELL' and 'O' in codes:
 		return 'Short'
-	elif buySell == 'SELL':
-		return 'Sell'
 	else:
-		raise InvalidTradeSide('{0}, {1}'.format(buySell, code))
+		return c_map[buySell]
 
 
 
