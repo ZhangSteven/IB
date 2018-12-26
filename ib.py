@@ -8,7 +8,7 @@
 
 from utils.utility import writeCsv
 from IB.utility import get_current_path, toRecordGroups, writeToFile, \
-						writeCashFile, writePositionFile
+						writeCashFile, writePositionFile, toOpenCloseGroup
 from os.path import join
 import csv, logging, datetime
 logger = logging.getLogger(__name__)
@@ -109,11 +109,22 @@ def processTradeFile(file, outputDir=get_current_path()):
 	a list of output csv files, to be uploaded by Bloomberg.
 	"""
 	logger.info('processTradeFile(): {0}'.format(file))
+	# return writeToFile(
+	# 			toRecordGroups(
+	# 				createTradeRecords(file)
+	# 			)
+	# 			, outputDir
+	# 			, '40006-B'
+	# 			, 'IB-QUANT'
+	# 		)
+
 	return writeToFile(
-				toRecordGroups(
+				toOpenCloseGroup(
 					createTradeRecords(file)
 				)
 				, outputDir
+				# , 'TEST6D'
+				# , 'BB'
 				, '40006-B'
 				, 'IB-QUANT'
 			)

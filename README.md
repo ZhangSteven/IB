@@ -16,16 +16,17 @@ Pending
 ##########
 Problem:
 
-1) Trades are too fragmented, can we separate all trades into 3 trade files:
+1) Trades are too fragmented, can we separate all trades into 2 trade files:
 
-	- file 1: long for all securities
-	- file 2: short for all securities, which cancelled out all positions in (1)
-	- file 3: net openings for all securities
+	- file 1: open position orders for all securities (buy, short sell)
+	- file 2: close position orders for all securities (sell, cover short)
 
 
-2) Will the trades in file 1, 2, 3 loaded into Geneva in sequence? If not, then
-consider flow trade once when file 1 and 2 are loaded, flow one more time when
-file 3 is loaded.
+	Loading to Bloomberg AIM leads to box position warnings, can choose to ignore.
+	Geneva position looks OK.
+
+
+2) FX trades are not handled in current ib.py
 
 
 

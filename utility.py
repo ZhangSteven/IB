@@ -164,6 +164,31 @@ def createCsvRow(fields, portfolio, broker, record):
 
 
 
+def toOpenCloseGroup(records):
+	"""
+	For testing.
+
+	[List] records => Group the records into two lists, the first being the
+	list of all opening orders (buy, sell short), the second being the list of
+	all closing orders (sell, cover short), and returt them as a list
+	[opening orders, closing orders]
+	"""
+	def openingOrder(record):
+		if record['Side'] in ('Buy', 'Short'):
+			return True
+		else:
+			return False
+
+
+	def closingOrder(record):
+		return not openingOrder(record)
+
+
+	return [list(filter(openingOrder, records)), 
+			list(filter(closingOrder, records))]
+
+
+
 def toRecordGroups(records):
 	"""
 	[List] records => [List] of [List] records
