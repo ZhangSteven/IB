@@ -252,9 +252,7 @@ def toTradeRecord(record):
 	r['Quantity'] = abs(float(record['Quantity']))
 	r['Price'] = float(record['Price'])
 	r['TradeDate'] = stringToDate(record['TradeDate'])
-	if record['AssetClass'] == 'FUT':
-		r['SettlementDate'] = r['TradeDate']
-	elif record['AssetClass'] == 'STK':
+	if record['AssetClass'] in ['FUT', 'STK']:
 		r['SettlementDate'] = stringToDate(record['SettleDate'])
 	else:
 		raise UnhandledTradeType('invalid type {0} in {1}'.format(record['AssetClass'], r))
