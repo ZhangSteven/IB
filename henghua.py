@@ -8,7 +8,7 @@
 
 from IB.utility import get_current_path, writeToFile, toRecordGroups, \
                         writeCashFile, writePositionFile, isCashFile, \
-                        isPositionFile
+                        isPositionFile, toOpenCloseGroup
 from xlrd import open_workbook
 from xlrd.xldate import xldate_as_datetime
 from os.path import join
@@ -43,12 +43,21 @@ def processCashPositionFile(file, outputDir=get_current_path()):
     else:
         raise InvalidFileName(file)
 
-
+ 
 
 def processTradeFile(file, outputDir):
     logger.info('processTradeFile(): {0}'.format(file))
+    # return writeToFile(
+    #             toRecordGroups(
+    #                 createTradeRecords(file)
+    #             )
+    #             , outputDir
+    #             , '40006-C'
+    #             , 'HGNH-QUANT'
+    #         )
+
     return writeToFile(
-                toRecordGroups(
+                toOpenCloseGroup(
                     createTradeRecords(file)
                 )
                 , outputDir

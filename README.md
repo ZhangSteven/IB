@@ -12,27 +12,27 @@ gf.py: Guang Fa Securities
 
 
 ##########
+Changes
+##########
+Now trades are separated into two groups only, the first being the opening
+ position orders, the second the closing position orders.
+
+
+
+##########
 Pending
 ##########
 Problem:
 
-1) Trades are too fragmented, can we separate all trades into 2 trade files:
+1) FX trades are not handled in current ib.py, need to manually handle.
 
-	- file 1: open position orders for all securities (buy, short sell)
-	- file 2: close position orders for all securities (sell, cover short)
+2) HGNH trades do not mark partial execution, for example,
 
+	Type	Quantity	Open/Close
+	Buy		10			O
+	Sell	15			O (but it should be 10 for closing, 5 for opening)
 
-	Loading to Bloomberg AIM leads to box position warnings, can choose to ignore.
-	Geneva position looks OK.
-
-
-2) FX trades are not handled in current ib.py
-
-
-
-
-test trade, cash, position file
-handle FX trade in trade file: should we just ignore them? They may be already booked. Yes we need. How to upload a FX trade with commission
+Is there a way to auto detect and fix this?
 
 put trade file into a folder and automate them?
 
