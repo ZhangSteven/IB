@@ -4,6 +4,7 @@
 import os
 from utils.utility import writeCsv
 from os.path import join
+from functools import reduce
 
 
 
@@ -166,12 +167,9 @@ def createCsvRow(fields, portfolio, broker, record):
 
 def toOpenCloseGroup(records):
 	"""
-	For testing.
-
-	[List] records => Group the records into two lists, the first being the
-	list of all opening orders (buy, sell short), the second being the list of
-	all closing orders (sell, cover short), and returt them as a list
-	[opening orders, closing orders]
+	[Iterable] records => Group the records into two lists, the first containing
+	all opening orders (buy, sell short), the second containing all closing orders 
+	(sell, cover short), and returt them as a list [opening orders, closing orders]
 	"""
 	def openingOrder(record):
 		if record['Side'] in ('Buy', 'Short'):
@@ -180,12 +178,16 @@ def toOpenCloseGroup(records):
 			return False
 
 
-	def closingOrder(record):
-		return not openingOrder(record)
+	def buildOpenCloseGroup(groups, record):
+		if openingOrder(record):
+			groups[0].append(record)
+		else:
+			groups[1].append(record)
+
+		return groups
 
 
-	return [list(filter(openingOrder, records)), 
-			list(filter(closingOrder, records))]
+	return reduce(buildOpenCloseGroup, records, [[], []])
 
 
 

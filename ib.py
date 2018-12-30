@@ -149,9 +149,13 @@ def createCashRecords(file):
 
 def createTradeRecords(file):
 	"""
-	[String] file => [List] trade records
+	[String] file => [Iterable] trade records
 	"""
-	return list(map(toTradeRecord, toSortedRecords(fileToRecords(file))))
+	return map(toTradeRecord, 
+				toSortedRecords(
+					filter(lambda r: r['AssetClass'] in ['FUT', 'STK']
+						, fileToRecords(file)
+					)))
 
 
 
@@ -170,35 +174,44 @@ def fileToRecords(file):
 
 def toSortedRecords(records):
 	"""
-	[List] records => [List] new records
+	[Iterable] records => [List] new records
 
-	Create a new list of records, the only difference is, the new list is sorted
-	by 'Date/Time' (execution time), from earliest to latest. If two records
-	have the same execution time, their order in the original list is preserved,
-	i.e., whichever comes first in the original list comes first in the softed
-	list.
+	sorted the records by 'Date/Time' (execution time), from earliest to latest. 
+	If two records have the same execution time, their order in the original list 
+	is preserved,i.e., whichever comes first in the original list comes first in 
+	the softed list.
 	"""
 	def takeRankDateTime(record):
 		return record['RankDateTime']
 
-	return sorted(toNewRecords(records), key=takeRankDateTime)
+
+	def toNewRecord(recordWithIndex):
+		i, record = recordWithIndex
+		r = duplicateRecord(record)
+		r['RankDateTime'] = (toDateTime(record['Date/Time']), i)
+		return r
+
+
+	return sorted(
+				map(toNewRecord, enumerate(records))
+				, key=takeRankDateTime)
 
 
 
-def toNewRecords(records):
-	"""
-	[List] records => [List] new records
+# def toNewRecords(records):
+# 	"""
+# 	[List] records => [List] new records
 
-	Map the record list to new reccord list, but for each record, the new record
-	has an extra field 'RankDateTime', as a tuple (rank, datetime).
-	"""
-	newRecords = []
-	for i in range(len(records)):
-		newRecord = duplicateRecord(records[i])
-		newRecord['RankDateTime'] = (toDateTime(newRecord['Date/Time']), i)
-		newRecords.append(newRecord)
+# 	Map the record list to new reccord list, but for each record, the new record
+# 	has an extra field 'RankDateTime', as a tuple (rank, datetime).
+# 	"""
+# 	newRecords = []
+# 	for i in range(len(records)):
+# 		newRecord = duplicateRecord(records[i])
+# 		newRecord['RankDateTime'] = (toDateTime(newRecord['Date/Time']), i)
+# 		newRecords.append(newRecord)
 
-	return newRecords
+# 	return newRecords
 
 
 
@@ -252,16 +265,16 @@ def toTradeRecord(record):
 	r['Quantity'] = abs(float(record['Quantity']))
 	r['Price'] = float(record['Price'])
 	r['TradeDate'] = stringToDate(record['TradeDate'])
-	if record['AssetClass'] in ['FUT', 'STK']:
-		r['SettlementDate'] = stringToDate(record['SettleDate'])
-	else:
-		raise UnhandledTradeType('invalid type {0} in {1}'.format(record['AssetClass'], r))
+	r['SettlementDate'] = stringToDate(record['SettleDate'])
 
 	# check Bloomberg 'CFTK' page for all possible commission codes
 	# here we simply put the sum of all commissions, tax, exchange fees
 	# under the name of 'Broker Commission'
 	r['Commission Code 1'] = 'Broker Commission'
 	r['Commission Amt 1'] = abs(float(record['Commission']))
+
+	# in our AIM configuration, there must be a 'Strategy' tag for each trade,
+	# so we just put TRADING as the default tag for all trades in IB.
 	r['Strategy'] = 'TRADING'
 
 	# Convert to integer if possible, sometimes if the quantity of a futures
