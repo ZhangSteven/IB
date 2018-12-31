@@ -7,8 +7,8 @@
 #
 
 from utils.utility import writeCsv
-from IB.utility import get_current_path, toRecordGroups, writeToFile, \
-						writeCashFile, writePositionFile, toOpenCloseGroup
+from IB.utility import get_current_path, writeToFile, writeCashFile, \
+						writePositionFile, toOpenCloseGroup
 from os.path import join
 import csv, logging, datetime
 logger = logging.getLogger(__name__)
@@ -109,14 +109,6 @@ def processTradeFile(file, outputDir=get_current_path()):
 	a list of output csv files, to be uploaded by Bloomberg.
 	"""
 	logger.info('processTradeFile(): {0}'.format(file))
-	# return writeToFile(
-	# 			toRecordGroups(
-	# 				createTradeRecords(file)
-	# 			)
-	# 			, outputDir
-	# 			, '40006-B'
-	# 			, 'IB-QUANT'
-	# 		)
 
 	return writeToFile(
 				toOpenCloseGroup(
@@ -151,11 +143,12 @@ def createTradeRecords(file):
 	"""
 	[String] file => [Iterable] trade records
 	"""
-	return map(toTradeRecord, 
-				toSortedRecords(
-					filter(lambda r: r['AssetClass'] in ['FUT', 'STK']
-						, fileToRecords(file)
-					)))
+	return map(toNewTradePrice
+			  , map(toTradeRecord, 
+					toSortedRecords(
+						filter(lambda r: r['AssetClass'] in ['FUT', 'STK']
+							  , fileToRecords(file)
+						))))
 
 
 
@@ -198,23 +191,6 @@ def toSortedRecords(records):
 
 
 
-# def toNewRecords(records):
-# 	"""
-# 	[List] records => [List] new records
-
-# 	Map the record list to new reccord list, but for each record, the new record
-# 	has an extra field 'RankDateTime', as a tuple (rank, datetime).
-# 	"""
-# 	newRecords = []
-# 	for i in range(len(records)):
-# 		newRecord = duplicateRecord(records[i])
-# 		newRecord['RankDateTime'] = (toDateTime(newRecord['Date/Time']), i)
-# 		newRecords.append(newRecord)
-
-# 	return newRecords
-
-
-
 def duplicateRecord(record):
 	"""
 	[Dictionary] record => [Dictionary] new record
@@ -239,6 +215,44 @@ def toDateTime(dtString):
 	dateString, hourString = dtString.split(';')
 	return datetime.datetime(int(dateString[0:4]), int(dateString[4:6]), int(dateString[6:]),
 							int(hourString[0:2]), int(hourString[2:4]), int(hourString[4:]))
+
+
+
+def toNewTradePrice(record):
+	"""
+	[Dict] record => [Dict] new record
+
+	Sometimes, IB's multipler is different from Bloomberg's, therefore IB's price
+	is different from the price to upload to Bloomberg AIM. For example, soybean
+	futures, IB provides a price of 8.8543 with a multipler of 5000, however 
+	Bloomberg has a multipler of 50, so the price to upload to AIM should be 
+	times 100, which is 885.43.
+	"""
+	def recordType(ticker):
+		"""
+		Find out the type of the item in the trade record, for example, it is
+		'S F9 Comdty', then return ('S ', 'Comdty'), so that we know it is
+		Soybean commodity futures.
+		"""
+		tokens = ticker.split()
+		sector = tokens[-1]
+		return (ticker[0:2], sector)
+
+	# The factor to multiply to IB price to become Bloomberg price
+	f_map = {
+		('XB', 'Comdty'): 100,	# IB multipler 42000, Bloomberg multipler 420
+		('PG', 'Comdty'): 100,	# IB multipler 42000, Bloomberg multipler 420
+		('S ', 'Comdty'): 100	# IB multipler 5000, Bloomberg multipler 50
+	}
+
+	r = duplicateRecord(record)
+	try:
+		factor = f_map[recordType(record['BloombergTicker'])]
+		r['Price'] = factor * record['Price']
+	except:
+		pass 	# no adjustment
+
+	return r
 
 
 
@@ -363,10 +377,10 @@ def createFuturesTicker(record):
 		('NQ' , 20): ('NQ', 'Index'),		# E-Mini NASDAQ 100 index futures
 		('CL' , 1000): ('CL', 'Comdty'),	# Light Sweet Crude Oil (WTI)
 		('PL' , 50): ('PL', 'Comdty'),		# Platinum futures
-		('RB' , 420): ('XB', 'Comdty'),		# Gasoline RBOB futures (NYMEX)
-		('RBOB',420) : ('PG', 'Comdty'),	# Gasoline RBOB futures (ICE)
+		('RB' , 42000): ('XB', 'Comdty'),	# Gasoline RBOB futures (NYMEX)
+		('RBOB',42000): ('PG', 'Comdty'),	# Gasoline RBOB futures (ICE)
 		('QG' , 2500) : ('EO', 'Comdty'), 	# E-Mini Natural Gas futures
-		('ZS' , 50) : ('S ', 'Comdty'),		# Soybean
+		('ZS' , 5000) : ('S ', 'Comdty'),	# Soybean
 		('GC' , 100): ('GC', 'Comdty')		# Gold
 	}
 

@@ -68,7 +68,7 @@ class TestHenghua(unittest2.TestCase):
         """
         First trade
         """
-        self.assertEqual(len(record), 9)   # there should be 8 fields
+        self.assertEqual(len(record), 10)   # there should be 10 fields
         self.assertEqual('HIV8 Index', record['BloombergTicker'])
         self.assertEqual('Buy', record['Side'])
         self.assertEqual(1, record['Quantity'])
@@ -77,6 +77,8 @@ class TestHenghua(unittest2.TestCase):
         self.assertEqual(datetime(2018,10,25), record['SettlementDate'])
         self.assertAlmostEqual(15, record['Commission Amt 1'])
         self.assertEqual('Broker Commission', record['Commission Code 1'])
+        self.assertEqual('TRADING', record['Strategy'])
+        # self.assertEqual(0.72136, record['tradetime'])    # not used
 
 
 
@@ -84,7 +86,7 @@ class TestHenghua(unittest2.TestCase):
         """
         29th trade
         """
-        self.assertEqual(len(record), 9)   # there should be 6 fields
+        self.assertEqual(len(record), 10)   # there should be 6 fields
         self.assertEqual('ESZ9 Index', record['BloombergTicker'])
         self.assertEqual('Cover', record['Side'])
         self.assertEqual(3, record['Quantity'])
