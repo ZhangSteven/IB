@@ -6,9 +6,10 @@
 # 2. Geneva reconciliation file.
 #
 
-from IB.utility import get_current_path, writeToFile, toRecordGroups, \
+from IB.utility import get_current_path, writeTradeFiles, toOpenCloseGroup, \
                         writeCashFile, writePositionFile, isCashFile, \
-                        isPositionFile, toOpenCloseGroup
+                        isPositionFile
+from IB.ib import stringToDate
 from xlrd import open_workbook
 from xlrd.xldate import xldate_as_datetime
 from os.path import join
@@ -56,13 +57,14 @@ def processTradeFile(file, outputDir):
     #             , 'HGNH-QUANT'
     #         )
 
-    return writeToFile(
+    return writeTradeFiles(
                 toOpenCloseGroup(
                     createTradeRecords(file)
                 )
                 , outputDir
                 , '40006-C'
                 , 'HGNH-QUANT'
+                , getDateFromFilename(file)
             )
 
 
@@ -346,6 +348,18 @@ def sortByTradeTime(records):
         return record['tradeTime']
 
     return sorted(records, key=takeTradeTime)
+
+
+
+def getDateFromFilename(file):
+    """
+    [String] file (full path) => [Datetime] date
+
+    The HGNH file name has a pattern: "Trade File <date>.xlsx" or "Cash <date>.xlsx"
+    The date is of the form "yyyymmdd", retrieve it and convert it to Datetime 
+    format.
+    """
+    return stringToDate(file.split('/')[-1].split('.')[0].split()[-1])
 
 
 

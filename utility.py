@@ -57,9 +57,13 @@ def fileNameWithoutPath(file):
 
 
 
-def writeToFile(recordGroups, outputDir, portfolio, broker):
+def writeTradeFiles(recordGroups, outputDir, portfolio, broker, date):
 	"""
-	[List] recordGroups, [String] outputDir, [String] portfolio, [String] broker
+	[List] recordGroups
+	, [String] outputDir
+	, [String] portfolio
+	, [String] broker
+	, [Datetime] date
 
 	 => create output csv file(s) for each group
 
@@ -83,7 +87,7 @@ def writeToFile(recordGroups, outputDir, portfolio, broker):
 
 	outputFiles = []
 	for (index, group) in enumerate(recordGroups):
-		file = createTradeFileName(index, group, outputDir, portfolio)
+		file = createTradeFileName(index, date, outputDir, portfolio)
 		writeCsv(file, [createCsvRow(fields, portfolio, broker, record) for record in group])
 		outputFiles.append(file)
 
@@ -91,10 +95,10 @@ def writeToFile(recordGroups, outputDir, portfolio, broker):
 
 
 
-def createTradeFileName(index, group, outputDir, portfolio):
+def createTradeFileName(index, tradeDate, outputDir, portfolio):
 	return join(outputDir
 				, toFileName(
-					group[0]['TradeDate']
+					tradeDate
 					, portfolio
 					, 'trade'
 					, createSuffix(index)))
@@ -169,7 +173,16 @@ def toOpenCloseGroup(records):
 	"""
 	[Iterable] records => Group the records into two lists, the first containing
 	all opening orders (buy, sell short), the second containing all closing orders 
-	(sell, cover short), and returt them as a list [opening orders, closing orders]
+	(sell, cover short), and returt them as a list [opening orders, closing orders].
+
+	The reason to do so is not related to Bloomberg AIM, which is fine to accept
+	all trades in the order they occurred. Sometimes it gives the warning of box
+	positions but the result is correct. However, when the trades are loaded into 
+	Geneva, sometimes it does not give the right unrealized gain loss numbers. It
+	is found that loading all opening orders then followed by all closing orders,
+	both in the order they occurred, then the unrelized gain loss will be fine.
+
+	That's why.
 	"""
 	def openingOrder(record):
 		if record['Side'] in ('Buy', 'Short'):

@@ -7,7 +7,7 @@
 #
 
 from utils.utility import writeCsv
-from IB.utility import get_current_path, writeToFile, writeCashFile, \
+from IB.utility import get_current_path, writeTradeFiles, writeCashFile, \
 						writePositionFile, toOpenCloseGroup
 from os.path import join
 import csv, logging, datetime
@@ -110,7 +110,7 @@ def processTradeFile(file, outputDir=get_current_path()):
 	"""
 	logger.info('processTradeFile(): {0}'.format(file))
 
-	return writeToFile(
+	return writeTradeFiles(
 				toOpenCloseGroup(
 					createTradeRecords(file)
 				)
@@ -119,6 +119,7 @@ def processTradeFile(file, outputDir=get_current_path()):
 				# , 'BB'
 				, '40006-B'
 				, 'IB-QUANT'
+                , getDateFromFilename(file)
 			)
 
 
@@ -467,6 +468,19 @@ def stringToDate(dateString):
 	"""
 	return datetime.datetime(int(dateString[0:4]), int(dateString[4:6]), 
 								int(dateString[6:]))
+
+
+
+def getDateFromFilename(file):
+    """
+    [String] file (full path) => [Datetime] date
+
+    The IB file name has a pattern: flex.<digits>.trade/cash/position.<date>.<date>.csv
+    The two dates are usually the same, of the form "yyyymmdd", retrieve it and
+    convert it to Datetime format.
+    """
+    # print(file)
+    return stringToDate(file.split('/')[-1].split('.')[3])
 
 
 
