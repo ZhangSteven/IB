@@ -200,7 +200,10 @@ def toOpenCloseGroup(records):
 		return groups
 
 
-	return reduce(buildOpenCloseGroup, records, [[], []])
+	# return reduce(buildOpenCloseGroup, records, [[], []])
+	return filter(lambda el: el != []
+				  , reduce(buildOpenCloseGroup, records, [[], []]))
+
 
 
 
