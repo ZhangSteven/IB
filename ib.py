@@ -480,7 +480,7 @@ def getDateFromFilename(file):
     convert it to Datetime format.
     """
     # print(file)
-    return stringToDate(file.split('/')[-1].split('.')[3])
+    return stringToDate(file.split('\\')[-1].split('.')[3])
 
 
 

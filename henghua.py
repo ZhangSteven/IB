@@ -359,7 +359,7 @@ def getDateFromFilename(file):
     The date is of the form "yyyymmdd", retrieve it and convert it to Datetime 
     format.
     """
-    return stringToDate(file.split('/')[-1].split('.')[0].split()[-1])
+    return stringToDate(file.split('\\')[-1].split('.')[0].split()[-1])
 
 
 

@@ -85,12 +85,17 @@ def writeTradeFiles(recordGroups, outputDir, portfolio, broker, date):
 				'Price', 'TradeDate', 'SettlementDate', 'Commission Code 1',
 				'Commission Amt 1', 'Strategy']
 
+	written = 0		# a flag to indicate whether any output files are written
 	outputFiles = []
 	for (index, group) in enumerate(recordGroups):
+		written = written + 1
 		file = createTradeFileName(index, date, outputDir, portfolio)
 		writeCsv(file, [createCsvRow(fields, portfolio, broker, record) for record in group])
 		outputFiles.append(file)
 
+	if written == 0:
+		print('no output file is written')
+		
 	return outputFiles
 
 
