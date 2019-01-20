@@ -12,6 +12,49 @@ gf.py: Guang Fa Securities
 
 
 
+Solutions:
+
+1. During trade conversion phase:
+
+    write file name, last modified date => database
+
+    so that when we load trade files from a folder, we won't load the same trade
+    file twice.
+
+
+2. During trade flow phase:
+
+    for each item in AIM XML,
+        if it is a trade
+            if it is already in database,
+                ignore
+            else
+                write to database
+                write to output XML
+
+        if it is a cancellation,
+            if it is already in database,
+                ignore
+            else
+                if it matches existing trade id in database,
+                    write to database
+                    write to output XML
+                else
+                    ignore
+
+
+    Stop using local file after database is on.
+
+
+3. For both (1) and (2), use two modes,
+    production mode: use database, scheduled run
+    test mode: run from command line, load file from local directory, no database
+
+
+4. Use MySQL database on docker.
+
+
+
 ##########
 Pending
 ##########
@@ -26,7 +69,10 @@ Pending
 
 Is there a way to auto detect and fix this?
 
-3) No way to prevent from uploading the same trade file twice? how to prevent missing a trade file? record the total number of trades for each broker and match with Bloomberg tickets, maybe.
+3) No way to prevent uploading the same trade file twice or to prevent missing a trade file? Record the total number of trades for each broker and match with Bloomberg tickets, maybe.
+
+4) Trade cancellations cannot flow AIM to Geneva.
+
 
 
 # ver 0.22, 2018-12-31
