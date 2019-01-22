@@ -25,8 +25,7 @@ def main(mode):
 	# resultList.extend(convertHGNHTrades(getHGNHTradeFiles(getTradeFileDir())))
 	
 	if mode == 'production':
-		# convert to list is necessary here because we want to use it twice
-		results = list(results)
+		results = list(results)	# we need to use it twice
 		saveResultsToDB(getTradeFileDir(), results)
 		closeConnection()
 		sendNotification(results)
@@ -102,11 +101,14 @@ def getIBTradeFiles(mode):
 
 def sendNotification(results):
 	"""
-	input: [Iterable] results
+	input: [List] results
 	output: send notification email to recipients about the results.
 	"""
-	sendMail(toMailMessage(results)
-			, getMailSubject()
+	if results == []:
+		return
+
+	sendMail( toMailMessage(results)
+			, toSubject(results)
 			, getMailSender()
 			, getMailRecipients()
 			, getMailServer()
@@ -116,7 +118,7 @@ def sendNotification(results):
 
 def toMailMessage(results):
 	"""
-	[Iterable] results => [String] message to be send as email body
+	[Iterable] results => [String] message to be send as email body,
 	"""
 	def toLine(result):
 		"""
@@ -129,7 +131,29 @@ def toMailMessage(results):
 
 
 	return '\n\n'.join(map(toLine, results))
-# end of toMailMessage
+# end of toMailMessage()
+
+
+
+def toSubject(results):
+	"""
+	[Iterable] results => [String] subject
+
+	If there is any failed result in the results, then return a subject line
+	indicating there is failure. Otherwise return the default subject.
+	"""
+	def isFailure(result):
+		if result[1] == 0:
+			return False
+		else:
+			return True
+
+
+	if any(map(isFailure, results)):
+		return 'Error occurred: ' + getMailSubject()
+	else:
+		return getMailSubject()
+
 
 
 

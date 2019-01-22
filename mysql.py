@@ -6,6 +6,7 @@
 import pymysql
 from os.path import join, getmtime
 from time import strftime, localtime
+from IB.configure import getDbName, getDbHost, getDbUser, getDbPassword
 import logging
 logger = logging.getLogger(__name__)
 
@@ -78,10 +79,10 @@ def getConnection():
 	global connection
 	if connection == None:
 		logger.info('getConnection(): establish DB connection')
-		connection = pymysql.connect(host='192.168.16.232',
-									user='steven',
-									password='clamc123',
-									db='blp_trade',
+		connection = pymysql.connect(host=getDbHost(),
+									user=getDbUser(),
+									password=getDbPassword(),
+									db=getDbName(),
 									cursorclass=pymysql.cursors.DictCursor)
 	return connection
 
@@ -112,30 +113,6 @@ if __name__ == '__main__':
 
 	# 		# save changes
 	# 		connection.commit()
-
-	# finally:
-	# 	connection.close()
-
-
-	# Insert many records, also works
-	# records = [('Trade File 20190115.xlsx', '2019-01-18 9:15:38', '0')
-	# 			, ('Trade File 20190116.xlsx', '2019-01-19 15:01:55', '1')]
-	# try:
-	# 	with connection.cursor() as cursor:
-	# 		# create a new record
-	# 		sql = "INSERT INTO `file` (`file_name`, `last_modified`, `status`) \
-	# 				VALUES (%s, %s, %s)"
-	# 		cursor.executemany(sql, records)
-
-	# 		# save changes
-	# 		connection.commit()
-
-	# finally:
-	# 	connection.close()
-
-
-	# insert or replace, many records
-
 
 	# finally:
 	# 	connection.close()

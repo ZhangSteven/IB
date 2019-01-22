@@ -74,3 +74,27 @@ def getMailServer():
 def getMailTimeout():
 	global config
 	return float(config['email']['timeout'])
+
+
+
+def getDbName():
+	global config
+	return config['database']['name']
+
+
+
+def getDbHost():
+	global config
+	return config['database']['host']
+
+
+
+def getDbUser():
+	global config
+	return config['database']['username']
+
+
+
+def getDbPassword():
+	global config
+	return config['database']['password']
