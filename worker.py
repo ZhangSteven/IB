@@ -25,6 +25,8 @@ def main(mode):
 	# resultList.extend(convertHGNHTrades(getHGNHTradeFiles(getTradeFileDir())))
 	
 	if mode == 'production':
+		# convert to list is necessary here because we want to use it twice
+		results = list(results)
 		saveResultsToDB(getTradeFileDir(), results)
 		closeConnection()
 		sendNotification(results)
@@ -103,13 +105,31 @@ def sendNotification(results):
 	input: [Iterable] results
 	output: send notification email to recipients about the results.
 	"""
-	sendMail(str(results)
+	sendMail(toMailMessage(results)
 			, getMailSubject()
 			, getMailSender()
 			, getMailRecipients()
 			, getMailServer()
 			, getMailTimeout())
 
+
+
+def toMailMessage(results):
+	"""
+	[Iterable] results => [String] message to be send as email body
+	"""
+	def toLine(result):
+		"""
+		[Tuple] result => [String] line
+		"""
+		if result[1] == 0:
+			return result[0] + ', ' + 'success' 
+		else:
+			return result[0] + ', ' + 'fail'
+
+
+	return '\n\n'.join(map(toLine, results))
+# end of toMailMessage
 
 
 
