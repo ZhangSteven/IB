@@ -5,42 +5,54 @@
 #
 
 from utils.file import getFiles
-from IB.configure import getTradeFileDir
+from IB.configure import getTradeFileDir, getTradeOutputDir
 from IB.mysql import lookupLastModifiedTime, closeConnection, saveResultsToDB
+from IB.ib import processTradeFile
 from datetime import datetime, timedelta
 from os.path import join, getmtime
+from itertools import chain
 import logging
 logger = logging.getLogger(__name__)
 
 
 
-def convert(mode):
-	resultList = []
-	resultList.extend(convertIBTrades(getIBTradeFiles(getTradeFileDir(), mode)))
+def main(mode):
+	results = []
+	results = chain(results, processIBFiles(getIBTradeFiles(mode)))
 	# resultList.extend(convertHGNHTrades(getHGNHTradeFiles(getTradeFileDir())))
 	
 	if mode == 'production':
-		saveResultsToDB(getTradeFileDir(), resultList)
+		saveResultsToDB(getTradeFileDir(), results)
 		closeConnection()
 
-	# sendMail(toMailMessage(resultList))
+	# sendMail(toMailMessage(results))
 
 
 
-def convertIBTrades(files):
+def processIBFiles(files):
 	"""
-	[Iterable] files => [List] results
+	[Iterable] files => [Iterable] results
 
 	where results is a list of tuple (file, result), result is 0 for success
 	or 1 for failure.
 	"""
-	return [(f, 0) for f in files]
+	def result(file):
+		try:
+			processTradeFile(join(getTradeFileDir(), file), getTradeOutputDir())
+			return (file, 0)
+
+		except:
+			logger.exception('processIBFiles(): {0}'.format(file))
+			return (file, 1)
+
+
+	return map(result, files)
 
 
 
-def getIBTradeFiles(directory, mode):
+def getIBTradeFiles(mode):
 	"""
-	[String] directory, [String] mode => [Iterable] IB trade files
+	[String] mode => [Iterable] IB trade files
 	"""
 	def csvFile(file):
 		"""
@@ -67,7 +79,7 @@ def getIBTradeFiles(directory, mode):
 		lastModified = lookupLastModifiedTime(file)
 		if lastModified == None:
 			return True
-		elif datetime.fromtimestamp(getmtime(join(directory, file))) \
+		elif datetime.fromtimestamp(getmtime(join(getTradeFileDir(), file))) \
 				- lastModified > timedelta(seconds=1):
 			return True
 		else:
@@ -77,9 +89,9 @@ def getIBTradeFiles(directory, mode):
 	if mode == 'production':
 		return filter(newerThanDB, 
 						filter(tradeFile, 
-							filter(csvFile, getFiles(directory))))
+							filter(csvFile, getFiles(getTradeFileDir()))))
 	else:
-		return filter(tradeFile, filter(csvFile, getFiles(directory)))
+		return filter(tradeFile, filter(csvFile, getFiles(getTradeFileDir())))
 # end of getIBTradeFiles()
 
 
@@ -95,4 +107,4 @@ if __name__ == '__main__':
 						, default='test')
 	args = parser.parse_args()
 
-	convert(args.mode)
+	main(args.mode)

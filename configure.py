@@ -34,8 +34,13 @@ def getTradeFileDir():
 	The directory where the log file resides.
 	"""
 	global config
-	directory = config['directory']['input']
-	if directory == '':
-		directory = get_current_path()
+	return config['directory']['input']
 
-	return directory
+
+
+def getTradeOutputDir():
+	"""
+	The directory where the log file resides.
+	"""
+	global config
+	return config['directory']['output']

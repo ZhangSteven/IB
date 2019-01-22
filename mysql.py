@@ -41,8 +41,6 @@ def saveResultsToDB(directory, resultList):
 	where directory is the directory containing the files, and resultList
 	is a list of tuple (file, status), status is either 0 or 1.
 	"""
-	# records = [('Trade File 20190117.xlsx', '2019-01-23 9:28:56', '0')
-	# 		, ('Trade File 20190113.xlsx', '2019-01-14 23:15:32', '1')]
 	def toDBRecord(result):
 		"""
 		([String] file, [Int] status) => 
@@ -63,8 +61,6 @@ def saveResultsToDB(directory, resultList):
 
 	try:
 		with connection.cursor() as cursor:
-			# sql = "REPLACE INTO `file` (`file_name`, `last_modified`, `status`) \
-			# 		VALUES (%s, %s, %s)"
 			sql = "REPLACE INTO file (file_name, last_modified, status) \
 					VALUES (%s, %s, %s)"
 			cursor.executemany(sql, records)
@@ -81,6 +77,7 @@ connection = None
 def getConnection():
 	global connection
 	if connection == None:
+		logger.info('getConnection(): establish DB connection')
 		connection = pymysql.connect(host='192.168.16.232',
 									user='steven',
 									password='clamc123',
@@ -93,6 +90,7 @@ def getConnection():
 def closeConnection():
 	global connection
 	if connection != None:
+		logger.info('DB connection closed')
 		connection.close()
 
 
