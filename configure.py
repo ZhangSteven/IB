@@ -44,3 +44,33 @@ def getTradeOutputDir():
 	"""
 	global config
 	return config['directory']['output']
+
+
+
+def getMailSender():
+	global config
+	return config['email']['sender']
+
+
+
+def getMailSubject():
+	global config
+	return config['email']['subject']
+
+
+
+def getMailRecipients():
+	global config
+	return config['email']['recipents']
+
+
+
+def getMailServer():
+	global config
+	return config['email']['server']
+
+
+
+def getMailTimeout():
+	global config
+	return float(config['email']['timeout'])

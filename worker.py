@@ -5,7 +5,10 @@
 #
 
 from utils.file import getFiles
-from IB.configure import getTradeFileDir, getTradeOutputDir
+from utils.mail import sendMail
+from IB.configure import getTradeFileDir, getTradeOutputDir, getMailSender, \
+						getMailSubject, getMailRecipients, getMailServer, \
+						getMailTimeout
 from IB.mysql import lookupLastModifiedTime, closeConnection, saveResultsToDB
 from IB.ib import processTradeFile
 from datetime import datetime, timedelta
@@ -24,8 +27,7 @@ def main(mode):
 	if mode == 'production':
 		saveResultsToDB(getTradeFileDir(), results)
 		closeConnection()
-
-	# sendMail(toMailMessage(results))
+		sendNotification(results)
 
 
 
@@ -93,6 +95,21 @@ def getIBTradeFiles(mode):
 	else:
 		return filter(tradeFile, filter(csvFile, getFiles(getTradeFileDir())))
 # end of getIBTradeFiles()
+
+
+
+def sendNotification(results):
+	"""
+	input: [Iterable] results
+	output: send notification email to recipients about the results.
+	"""
+	sendMail(str(results)
+			, getMailSubject()
+			, getMailSender()
+			, getMailRecipients()
+			, getMailServer()
+			, getMailTimeout())
+
 
 
 
