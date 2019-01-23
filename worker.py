@@ -10,7 +10,8 @@ from IB.configure import getTradeFileDir, getTradeOutputDir, getMailSender, \
 						getMailSubject, getMailRecipients, getMailServer, \
 						getMailTimeout
 from IB.mysql import lookupLastModifiedTime, closeConnection, saveResultsToDB
-from IB.ib import processTradeFile
+from IB.ib import processTradeFile as processIBTradeFile
+from IB.henghua import processTradeFile as processHGNHTradeFile
 from datetime import datetime, timedelta
 from os.path import join, getmtime
 from itertools import chain
@@ -22,7 +23,7 @@ logger = logging.getLogger(__name__)
 def main(mode):
 	results = []
 	results = chain(results, processIBFiles(getIBTradeFiles(mode)))
-	# resultList.extend(convertHGNHTrades(getHGNHTradeFiles(getTradeFileDir())))
+	results = chain(results, processHGNHFiles(getHGNHTradeFiles(mode)))
 	
 	if mode == 'production':
 		results = list(results)	# we need to use it twice
@@ -42,7 +43,7 @@ def processIBFiles(files):
 	"""
 	def result(file):
 		try:
-			processTradeFile(join(getTradeFileDir(), file), getTradeOutputDir())
+			processIBTradeFile(join(getTradeFileDir(), file), getTradeOutputDir())
 			return (file, 0, 'IB')
 
 		except:
@@ -58,36 +59,11 @@ def getIBTradeFiles(mode):
 	"""
 	[String] mode => [Iterable] IB trade files
 	"""
-	def csvFile(file):
-		"""
-		[String] file => [Bool] is the file's extension '.csv'
-		"""
-		tokens = file.split('.')
-		if len(tokens) > 1 and tokens[-1] == 'csv':
-			return True
-		else:
-			return False
-
-
 	def tradeFile(file):
 		"""
 		[String] file => [Bool] does the file name contains 'trade'
 		"""
 		return 'trade_steven' in file.split('.')
-
-
-	def newerThanDB(file):
-		"""
-		[String] file => [Bool] is the file in database
-		"""
-		lastModified = lookupLastModifiedTime(file)
-		if lastModified == None:
-			return True
-		elif datetime.fromtimestamp(getmtime(join(getTradeFileDir(), file))) \
-				- lastModified > timedelta(seconds=1):
-			return True
-		else:
-			return False
 
 
 	if mode == 'production':
@@ -96,7 +72,87 @@ def getIBTradeFiles(mode):
 							filter(csvFile, getFiles(getTradeFileDir()))))
 	else:
 		return filter(tradeFile, filter(csvFile, getFiles(getTradeFileDir())))
-# end of getIBTradeFiles()
+
+
+
+def processHGNHFiles(files):
+	"""
+	[Iterable] files => [Iterable] results
+
+	where results is a list of tuple (file, result, source), where
+	result: 0 for success, 1 for failure.
+	source: 'HGNH'
+	"""
+	def result(file):
+		try:
+			processHGNHTradeFile(join(getTradeFileDir(), file), getTradeOutputDir())
+			return (file, 0, 'HGNH')
+
+		except:
+			logger.exception('processHGNHFiles(): {0}'.format(file))
+			return (file, 1, 'HGNH')
+
+
+	return map(result, files)
+
+
+
+def getHGNHTradeFiles(mode):
+	"""
+	[String] mode => [Iterable] HGNH trade files
+	"""
+	def tradeFile(file):
+		"""
+		[String] file => [Bool] does the file name contains 'trade'
+		"""
+		return file.lower().startswith('trade file')
+
+
+	if mode == 'production':
+		return filter(newerThanDB, 
+						filter(tradeFile, 
+							filter(excelFile, getFiles(getTradeFileDir()))))
+	else:
+		return filter(tradeFile, filter(excelFile, getFiles(getTradeFileDir())))
+
+
+
+def csvFile(file):
+	"""
+	[String] file => [Bool] is the file's extension '.csv'
+	"""
+	tokens = file.split('.')
+	if len(tokens) > 1 and tokens[-1] == 'csv':
+		return True
+	else:
+		return False
+
+
+
+def excelFile(file):
+	"""
+	[String] file => [Bool] is the file's extension '.xls' or 'xlsx'
+	"""
+	tokens = file.split('.')
+	if len(tokens) > 1 and tokens[-1] in ['xls', 'xlsx']:
+		return True
+	else:
+		return False
+
+
+
+def newerThanDB(file):
+	"""
+	[String] file => [Bool] is the file in database
+	"""
+	lastModified = lookupLastModifiedTime(file)
+	if lastModified == None:
+		return True
+	elif datetime.fromtimestamp(getmtime(join(getTradeFileDir(), file))) \
+			- lastModified > timedelta(seconds=1):
+		return True
+	else:
+		return False
 
 
 
