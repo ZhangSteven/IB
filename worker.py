@@ -36,17 +36,18 @@ def processIBFiles(files):
 	"""
 	[Iterable] files => [Iterable] results
 
-	where results is a list of tuple (file, result), result is 0 for success
-	or 1 for failure.
+	where results is a list of tuple (file, result, source), where
+	result: 0 for success, 1 for failure.
+	source: 'IB'
 	"""
 	def result(file):
 		try:
 			processTradeFile(join(getTradeFileDir(), file), getTradeOutputDir())
-			return (file, 0)
+			return (file, 0, 'IB')
 
 		except:
 			logger.exception('processIBFiles(): {0}'.format(file))
-			return (file, 1)
+			return (file, 1, 'IB')
 
 
 	return map(result, files)
@@ -120,17 +121,17 @@ def toMailMessage(results):
 	"""
 	[Iterable] results => [String] message to be send as email body,
 	"""
-	def toLine(result):
+	def line(result):
 		"""
 		[Tuple] result => [String] line
 		"""
 		if result[1] == 0:
-			return result[0] + ', ' + 'success' 
+			return result[2] + ' : ' + result[0] + ', ' + 'success' 
 		else:
-			return result[0] + ', ' + 'fail'
+			return result[2] + ' : ' + result[0] + ', ' + 'fail'
 
 
-	return '\n\n'.join(map(toLine, results))
+	return '\n\n'.join(map(line, results))
 # end of toMailMessage()
 
 
