@@ -217,7 +217,7 @@ def toSubject(results):
 
 
 	if any(map(isFailure, results)):
-		return 'Error occurred: ' + getMailSubject()
+		return 'Error occurred during 40006 trade conversion'
 	else:
 		return getMailSubject()
 
