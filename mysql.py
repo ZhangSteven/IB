@@ -47,7 +47,7 @@ def saveResultsToDB(directory, resultList):
 		([String] file, [Int] status) => 
 			([String] file, [String] datetime, [String] status)
 		"""
-		file, status, _ = result
+		file, status, _, _ = result
 		return (file
 				, strftime('%Y-%m-%d %H:%M:%S', localtime(getmtime(join(directory, file))))
 				, str(status))

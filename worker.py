@@ -31,6 +31,12 @@ def main(mode):
 		closeConnection()
 		sendNotification(results)
 
+	else:
+		# This step is necessary, because of the laziness of the iterables,
+		# i.e., the filter and map objects, filtering and mapping won't happen
+		# until we actually use them.
+		show(results)
+
 
 
 def processIBFiles(files):
@@ -43,14 +49,14 @@ def processIBFiles(files):
 	"""
 	def result(file):
 		try:
-			processIBTradeFile(join(getTradeFileDir(), file), getTradeOutputDir())
-			return (file, 0, 'IB')
-
+			output = processIBTradeFile(join(getTradeFileDir(), file)
+										, getTradeOutputDir())
+			return (file, 0, 'IB', output)
 		except:
 			logger.exception('processIBFiles(): {0}'.format(file))
-			return (file, 1, 'IB')
+			return (file, 1, 'IB', None)
 
-
+	
 	return map(result, files)
 
 
@@ -85,12 +91,13 @@ def processHGNHFiles(files):
 	"""
 	def result(file):
 		try:
-			processHGNHTradeFile(join(getTradeFileDir(), file), getTradeOutputDir())
-			return (file, 0, 'HGNH')
+			output = processHGNHTradeFile( join(getTradeFileDir(), file)
+										 , getTradeOutputDir())
+			return (file, 0, 'HGNH', output)
 
 		except:
 			logger.exception('processHGNHFiles(): {0}'.format(file))
-			return (file, 1, 'HGNH')
+			return (file, 1, 'HGNH', None)
 
 
 	return map(result, files)
@@ -164,7 +171,7 @@ def sendNotification(results):
 	if results == []:
 		return
 
-	sendMail( toMailMessage(results)
+	sendMail( resultsToString(results)
 			, toSubject(results)
 			, getMailSender()
 			, getMailRecipients()
@@ -173,22 +180,25 @@ def sendNotification(results):
 
 
 
-def toMailMessage(results):
+def resultsToString(results):
 	"""
-	[Iterable] results => [String] message to be send as email body,
+	[Iterable] results => [String] message
+
+	result is a tuple (file, success, broker, output file)
 	"""
 	def line(result):
 		"""
 		[Tuple] result => [String] line
 		"""
+		file, success, broker, output = result
 		if result[1] == 0:
-			return result[2] + ' : ' + result[0] + ', ' + 'success' 
+			return broker + ' : ' + file + ', ' + 'success\n' + str(output)
 		else:
-			return result[2] + ' : ' + result[0] + ', ' + 'fail'
+			return broker + ' : ' + file + ', ' + 'fail\n' + str(output)
 
 
 	return '\n\n'.join(map(line, results))
-# end of toMailMessage()
+# end of resultsToString()
 
 
 
@@ -210,6 +220,16 @@ def toSubject(results):
 		return 'Error occurred: ' + getMailSubject()
 	else:
 		return getMailSubject()
+
+
+
+def show(results):
+	"""
+	
+
+	Print them to the stdout.
+	"""
+	print(resultsToString(results))
 
 
 
