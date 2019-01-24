@@ -33,9 +33,9 @@ def main(mode):
 
 	else:
 		# This step is necessary, because of the laziness of the iterables,
-		# i.e., the filter and map objects, filtering and mapping won't happen
-		# until we actually use them.
-		show(results)
+		# e.g., filter or map objects, filtering and mapping won't happen
+		# until they are iterated.
+		print(resultsToString(results))
 
 
 
@@ -186,15 +186,29 @@ def resultsToString(results):
 
 	result is a tuple (file, success, broker, output file)
 	"""
+	def outputToString(output):
+		"""
+		[List] output => [String] output
+		"""
+		if output == None or output == []:
+			return '\nNo trades were generated'
+		else:
+			line = '\n'
+			for f in output:
+				line = line + f + '\n'
+
+			return line
+
+
 	def line(result):
 		"""
 		[Tuple] result => [String] line
 		"""
 		file, success, broker, output = result
 		if result[1] == 0:
-			return broker + ' : ' + file + ', ' + 'success\n' + str(output)
+			return broker + ' : ' + file + ', ' + 'OK' + outputToString(output)
 		else:
-			return broker + ' : ' + file + ', ' + 'fail\n' + str(output)
+			return broker + ' : ' + file + ', ' + 'fail' + outputToString(output)
 
 
 	return '\n\n'.join(map(line, results))
@@ -220,16 +234,7 @@ def toSubject(results):
 		return 'Error occurred during 40006 trade conversion'
 	else:
 		return getMailSubject()
-
-
-
-def show(results):
-	"""
 	
-
-	Print them to the stdout.
-	"""
-	print(resultsToString(results))
 
 
 
