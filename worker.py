@@ -190,8 +190,8 @@ def resultsToString(results):
 		"""
 		[List] output => [String] output
 		"""
-		if output == None or output == []:
-			return '\nNo trades were generated'
+		if output == []:
+			return '\nNo trades'
 		else:
 			line = '\n'
 			for f in output:
@@ -208,7 +208,7 @@ def resultsToString(results):
 		if result[1] == 0:
 			return broker + ' : ' + file + ', ' + 'OK' + outputToString(output)
 		else:
-			return broker + ' : ' + file + ', ' + 'fail' + outputToString(output)
+			return broker + ' : ' + file + ', ' + 'fail'
 
 
 	return '\n\n'.join(map(line, results))
