@@ -34,10 +34,8 @@ def processTradeFile(file, outputDir=get_current_path()):
 					createTradeRecords(file)
 				)
 				, outputDir
-				# , 'TEST6D'
-				# , 'BB'
-				, '40006-B'
-				, 'IB-QUANT'
+				, '40006-D'
+				, 'GF-QUANT'
                 , getDateFromFilename(file)
 			)
 
@@ -47,14 +45,7 @@ def createTradeRecords(file):
 	"""
 	[String] file => [Iterable] trade records
 	"""
-	# return map(toNewTradePrice
-	# 		  , map(toTradeRecord, 
-	# 				toSortedRecords(
-	# 					filter(lambda r: r['AssetClass'] in ['FUT', 'STK']
-	# 						  , fileToRecords(file)
-	# 					))))
-
-	return map(tradeRecord, fileToRecords(file))
+	return toSortedRecords(map(tradeRecord, fileToRecords(file)))
 
 
 
@@ -62,8 +53,8 @@ def tradeRecord(fileRecord):
 	"""
 	[Dict] fileRecord => [Dict] trade record
 
-	Create a new trade record from the existing record, the trade record has 8
-	fields:
+	Create a new trade record from the existing record, the below fields are
+	necessary to create Bloomberg upload file.
 
 	1. BloombergTicker
 	2. Side
@@ -91,6 +82,8 @@ def tradeRecord(fileRecord):
 	if r['Quantity'].is_integer():
 		r['Quantity'] = int(r['Quantity'])
 
+	r['Datetime'] = createDatetime(fileRecord['TradeDate'], fileRecord['Time'])
+
 	return r
 
 
@@ -117,64 +110,17 @@ def toSortedRecords(records):
 	"""
 	[Iterable] records => [List] new records
 
-	sorted the records by 'Date/Time' (execution time), from earliest to latest. 
-	If two records have the same execution time, their order in the original list 
-	is preserved,i.e., whichever comes first in the original list comes first in 
-	the softed list.
+	Sort the records by 'Datetime' field. If two records have the same 
+	'Datetime', then their order in the original list is preserved,i.e., 
+	whichever comes first in the original list comes first in  the softed list.
 	"""
-	def takeRankDateTime(record):
-		return record['RankDateTime']
+	def byDateTime(recordWithOrder):
+		order, record = recordWithOrder
+		return (record['Datetime'], order)
 
 
-	def toNewRecord(recordWithIndex):
-		i, record = recordWithIndex
-		r = duplicateRecord(record)
-		r['RankDateTime'] = (toDateTime(record['Date/Time']), i)
-		return r
+	return map(lambda x: x[1], sorted(enumerate(records), key=byDateTime))
 
-
-	return sorted(
-				map(toNewRecord, enumerate(records))
-				, key=takeRankDateTime)
-
-
-
-
-def toNewTradePrice(record):
-	"""
-	[Dict] record => [Dict] new record
-
-	Sometimes, IB's multipler is different from Bloomberg's, therefore IB's price
-	is different from the price to upload to Bloomberg AIM. For example, soybean
-	futures, IB provides a price of 8.8543 with a multipler of 5000, however 
-	Bloomberg has a multipler of 50, so the price to upload to AIM should be 
-	times 100, which is 885.43.
-	"""
-	def recordType(ticker):
-		"""
-		Find out the type of the item in the trade record, for example, it is
-		'S F9 Comdty', then return ('S ', 'Comdty'), so that we know it is
-		Soybean commodity futures.
-		"""
-		tokens = ticker.split()
-		sector = tokens[-1]
-		return (ticker[0:2], sector)
-
-	# The factor to multiply to IB price to become Bloomberg price
-	f_map = {
-		('XB', 'Comdty'): 100,	# IB multipler 42000, Bloomberg multipler 420
-		('PG', 'Comdty'): 100,	# IB multipler 42000, Bloomberg multipler 420
-		('S ', 'Comdty'): 100	# IB multipler 5000, Bloomberg multipler 50
-	}
-
-	r = duplicateRecord(record)
-	try:
-		factor = f_map[recordType(record['BloombergTicker'])]
-		r['Price'] = factor * record['Price']
-	except:
-		pass 	# no adjustment
-
-	return r
 
 
 
@@ -197,6 +143,8 @@ def createFuturesTicker(fileRecord):
 	"""
 	bMap = {	# mapping underlying to Bloombert Ticker's first 2 letters,
 				# and index or comdty
+		('HSI', 'HKFE'):('HI', 'Index'),	# Hang Seng Index
+		('MHU', 'HKFE'):('HU', 'Index'),	# mini Hang Seng Index
 		('SM', 'CBOT'): ('SM', 'Comdty'),	# Soybean Meal
 		('WH', 'CBOT'): ('W ', 'Comdty'), 	# Wheat
 		('SO', 'CBOT'): ('S ', 'Comdty'),	# Soybean
@@ -204,7 +152,7 @@ def createFuturesTicker(fileRecord):
 		('RB', 'NYMEX'):('XB', 'Comdty'), 	# RBOB Gasoline
 		('CL', 'NYMEX'):('CL', 'Comdty'),	# Light Weight Crude Oil (WTI)
 		('BR', 'IPE') : ('CO', 'Comdty'),	# Brent Crude Oil
-		('NG', 'CME'):('NG', 'Comdty'),	# Natural Gas
+		('NG', 'CME') : ('NG', 'Comdty'),	# Natural Gas
 		('GC', 'COMEX'):('GC', 'Comdty') 	# Gold
 	}
 
@@ -266,7 +214,7 @@ def toFloat(data):
 	"""
 	[String] data => [Float] data
 
-	data is like: 1,440.45 or 96600.00 (there may be a comma)
+	data is like: "1,440.45" or "96600.00" (there may be a comma)
 	"""
 	return float(''.join(filter(lambda x: x != ',', data)))
 
@@ -278,8 +226,17 @@ def stringToDate(dateString):
 
 	dateString is of format: yyyy-mm-dd
 	"""
-	tokens = dateString.split('-')
-	return datetime.datetime(int(tokens[0]), int(tokens[1]), int(tokens[2]))
+	return datetime.datetime.strptime(dateString, '%Y-%m-%d')
+
+
+
+def createDatetime(dt, tm):
+	"""
+	[String] dt, [String] tm => [Datetime] datetime
+
+	convert "yyyy-mm-dd", "HH:mm:ss" to datetime object
+	"""
+	return datetime.datetime.strptime(dt + ' ' + tm, '%Y-%m-%d %H:%M:%S')
 
 
 
@@ -287,12 +244,10 @@ def getDateFromFilename(file):
     """
     [String] file (full path) => [Datetime] date
 
-    The Guangfa file name has a pattern: flex.<digits>.trade/cash/position.<date>.<date>.csv
-    The two dates are usually the same, of the form "yyyymmdd", retrieve it and
-    convert it to Datetime format.
+    The Guangfa file name has a pattern: 8888802200trddata_f20140131.txt
+    Date is of format "yyyymmdd".
     """
-    # print(file)
-    return stringToDate(file.split('\\')[-1].split('.')[3])
+    return datetime.datetime.strptime(file[-12:-4], '%Y%m%d')
 
 
 
