@@ -20,6 +20,44 @@ class InvalidTradeSide(Exception):
 
 
 
+# def processCashPositionFile(file, outputDir=get_current_path()):
+#     """
+#     [String] cash or position file => [String] output file
+
+#     Convert an GuangFa cash or position file to cash or position file ready
+#     for Geneva reconciliation.
+#     """
+#     if isCashFile(file):
+#         return processCashFile(file, outputDir)
+#     elif isPositionFile(file):
+#         return processPositionFile(file, outputDir)
+#     else:
+#         raise InvalidFileName(file)
+
+
+
+# def isCashFile(fn):
+# 	"""
+# 	[String] file name => [Bool] is this a cash file
+# 	"""
+# 	if 'cusfund_' in fn.split('\\')[-1]:
+# 		return True 
+
+# 	return False
+
+
+
+# def isPositionFile(fn):
+# 	"""
+# 	[String] file name => [Bool] is this a position file
+# 	"""
+# 	if 'holddata_' in fn.split('\\')[-1]:
+# 		return True 
+
+# 	return False
+	
+
+
 def processTradeFile(file, outputDir=get_current_path()):
 	"""
 	[String] trade file, [String] outputDir => [List] output file names
