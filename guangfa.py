@@ -276,9 +276,7 @@ if __name__ == '__main__':
 		print('input file name is missing')
 		sys.exit(1)
 	elif args.type == 't':
-		# processTradeFile(join(get_current_path(), args.file))
-		print(list(createTradeRecords(join(get_current_path(), args.file))))
+		processTradeFile(join(get_current_path(), args.file))
 	else:
 		pass
-	# else:
 	# 	processCashPositionFile(join(get_current_path(), args.file), get_current_path())
