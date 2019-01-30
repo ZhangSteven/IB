@@ -7,8 +7,7 @@
 #
 
 from IB.utility import get_current_path, writeTradeFiles, toOpenCloseGroup, \
-                        writeCashFile, writePositionFile, isCashFile, \
-                        isPositionFile
+                        writeCashFile, writePositionFile, fileNameWithoutPath
 from IB.ib import stringToDate
 from xlrd import open_workbook
 from xlrd.xldate import xldate_as_datetime
@@ -37,26 +36,23 @@ def processCashPositionFile(file, outputDir=get_current_path()):
     The rule is: cash file name always starts with 'cash', position file
     name always starts with 'position'.
     """
+    logger.info('processCashPositionFile(): {0}'
+                .format(file.replace(u'\xa0', u' ')))
     if isCashFile(file):
-        return processCashFile(file, outputDir)
+        return writeCashFile('40006-C', createCashRecords(file), 
+                                    outputDir, getDateFromFilename(file))
     elif isPositionFile(file):
-        return processPositionFile(file, outputDir)
+        return writePositionFile('40006-C', createPositionRecords(file), 
+                                    outputDir, getDateFromFilename(file))
     else:
-        raise InvalidFileName(file)
+        logger.debug('processCashPositionFile(): not a cash or position file: \
+                        {0}'.format(file.replace(u'\xa0', u' ')))
+        return ''
 
  
 
 def processTradeFile(file, outputDir):
     logger.info('processTradeFile(): {0}'.format(file))
-    # return writeToFile(
-    #             toRecordGroups(
-    #                 createTradeRecords(file)
-    #             )
-    #             , outputDir
-    #             , '40006-C'
-    #             , 'HGNH-QUANT'
-    #         )
-
     return writeTradeFiles(
                 toOpenCloseGroup(
                     createTradeRecords(file)
@@ -69,15 +65,37 @@ def processTradeFile(file, outputDir):
 
 
 
-def processCashFile(file, outputDir):
-    logger.info('processCashFile(): {0}'.format(file))
-    return writeCashFile('40006-C', createCashRecords(file), outputDir)
+def isCashOrPositionFile(file):
+    """
+    [String] full path file name => [Bool] is this a cash or position file
+    """
+    return isCashFile(file) or isPositionFile(file)
 
 
 
-def processPositionFile(file, outputDir):
-    logger.info('processPositionFile(): {0}'.format(file))
-    return writePositionFile('40006-C', createPositionRecords(file), outputDir)
+def isCashFile(file):
+    """
+    [String] file => [Bool] yesno
+
+    file is a full path file name.
+    """
+    if fileNameWithoutPath(file).split('.')[0].lower().startswith('cash'):
+        return True
+    else:
+        return False
+
+
+
+def isPositionFile(file):
+    """
+    [String] file => [Bool] yesno
+
+    file is a full path file name.
+    """
+    if fileNameWithoutPath(file).split('.')[0].lower().startswith('position'):
+        return True
+    else:
+        return False
 
 
 
@@ -105,9 +123,15 @@ def createCashRecords(file):
 
     A cash record is a tuple, looks like ('HKD', 1234.56)
     """
-    record = getEndingBalanceRecord(linesToRecords(fileToLines(file)))
+    # record = getEndingBalanceRecord(linesToRecords(fileToLines(file)))
 
-    # date = xldate_as_datetime(record['Date'], 0)
+    endingBalance = list(filter(lambda r: r['Currency'] == 'Ending Balance'
+                                , linesToRecords(fileToLines(file))))
+    if endingBalance == []: # no records at all
+        return []
+
+    record = endingBalance[0]
+    date = xldate_as_datetime(record['Date'], 0)
     date = get_datetime(record['Date'])
 
     def tupleToRecord(t):
@@ -150,16 +174,16 @@ def get_datetime(dt):
 
 
 
-def getEndingBalanceRecord(records):
-    """
-    [List] records from file => [Dictionary] the record showing ending balance
-    """
-    return list(
-                filter(
-                    lambda record: record['Currency'] == 'Ending Balance'
-                    , records
-                )
-            )[0]
+# def getEndingBalanceRecord(records):
+#     """
+#     [List] records from file => [Dictionary] the record showing ending balance
+#     """
+#     return list(
+#                 filter(
+#                     lambda record: record['Currency'] == 'Ending Balance'
+#                     , records
+#                 )
+#             )[0]
 
 
 

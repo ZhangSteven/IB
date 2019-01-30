@@ -8,7 +8,7 @@
 
 from utils.utility import writeCsv
 from IB.utility import get_current_path, writeTradeFiles, writeCashFile, \
-						writePositionFile, toOpenCloseGroup
+						writePositionFile, toOpenCloseGroup, fileNameWithoutPath
 from os.path import join
 import csv, logging, datetime
 logger = logging.getLogger(__name__)
@@ -27,12 +27,32 @@ def processCashPositionFile(file, outputDir=get_current_path()):
     Convert an GuangFa cash or position file to cash or position file ready
     for Geneva reconciliation.
     """
+    # if isCashFile(file):
+    #     return processCashFile(file, outputDir)
+    # elif isPositionFile(file):
+    #     return processPositionFile(file, outputDir)
+    # else:
+    #     raise InvalidFileName(file)
+
+    logger.info('processCashPositionFile(): {0}'.format(file))
     if isCashFile(file):
-        return processCashFile(file, outputDir)
+        return writeCashFile('40006-D', createCashRecords(file), 
+        							outputDir, getDateFromFilename(file))
     elif isPositionFile(file):
-        return processPositionFile(file, outputDir)
+        return writePositionFile('40006-D', createPositionRecords(file), 
+        							outputDir, getDateFromFilename(file))
     else:
-        raise InvalidFileName(file)
+        logger.debug('processCashPositionFile(): not a cash or position file: \
+                        {0}'.format(file))
+        return ''
+
+
+
+def isCashOrPositionFile(file):
+	"""
+	[String] full path file name => [Bool] is this a cash or position file
+	"""
+	return isCashFile(file) or isPositionFile(file)
 
 
 
@@ -40,7 +60,7 @@ def isCashFile(fn):
 	"""
 	[String] file name => [Bool] is this a cash file
 	"""
-	if 'cusfund_' in fn.split('\\')[-1]:
+	if 'cusfund_' in fileNameWithoutPath(fn):
 		return True 
 
 	return False
@@ -51,39 +71,10 @@ def isPositionFile(fn):
 	"""
 	[String] file name => [Bool] is this a position file
 	"""
-	if 'holddata_' in fn.split('\\')[-1]:
+	if 'holddata_' in fileNameWithoutPath(fn):
 		return True 
 
 	return False
-	
-
-
-def processPositionFile(file, outputDir):
-	"""
-	[String] file, [String] outputDir => [String] output csv file
-
-	if there are no records, i.e., no content to write, no csv file
-	is written and return value will be empty string.
-	"""
-	logger.info('processPositionFile(): {0}'.format(file))
-	records = createPositionRecords(file)
-	if len(records) > 0:
-		return writePositionFile('40006-D', records, outputDir)
-	else:
-		return ''
-
-
-
-def processCashFile(file, outputDir):
-	"""
-	[String] file, [String] outputDir => [String] output csv file
-	"""
-	logger.info('processCashFile(): {0}'.format(file))
-	records = createCashRecords(file)
-	if len(records) > 0:
-		return writeCashFile('40006-D', records, outputDir)
-	else:
-		return ''
 
 
 

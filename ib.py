@@ -36,7 +36,7 @@ def processCashPositionFile(file, outputDir=get_current_path()):
     The rule is: cash file name always starts with 'cash', position file
     name always starts with 'position'.
     """
-    logger.debug('processCashPositionFile(): {0}'.format(file))
+    logger.info('processCashPositionFile(): {0}'.format(file))
     if isCashFile(file):
         return writeCashFile('40006-B', createCashRecords(file), 
         							outputDir, getDateFromFilename(file))
@@ -44,7 +44,7 @@ def processCashPositionFile(file, outputDir=get_current_path()):
         return writePositionFile('40006-B', createPositionRecords(file), 
         							outputDir, getDateFromFilename(file))
     else:
-        logger.debug('processCashPositionFile(): not a cash or position file \
+        logger.debug('processCashPositionFile(): not a cash or position file: \
                         {0}'.format(file))
         return ''
 
@@ -79,19 +79,6 @@ def isPositionFile(file):
 		return True 
 
 	return False
-
-
-
-def processCashFile(file, outputDir):
-	"""
-	[String] file, [String] outputDir => [String] output csv file
-	"""
-	logger.info('processCashFile(): {0}'.format(file))
-	records = createCashRecords(file)
-	if len(records) > 0:
-		return writeCashFile('40006-B', records, outputDir)
-	else:
-		return ''
 
 
 
