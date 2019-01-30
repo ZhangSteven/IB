@@ -58,6 +58,35 @@ def isPositionFile(fn):
 	
 
 
+def processPositionFile(file, outputDir):
+	"""
+	[String] file, [String] outputDir => [String] output csv file
+
+	if there are no records, i.e., no content to write, no csv file
+	is written and return value will be empty string.
+	"""
+	logger.info('processPositionFile(): {0}'.format(file))
+	records = createPositionRecords(file)
+	if len(records) > 0:
+		return writePositionFile('40006-D', records, outputDir)
+	else:
+		return ''
+
+
+
+def processCashFile(file, outputDir):
+	"""
+	[String] file, [String] outputDir => [String] output csv file
+	"""
+	logger.info('processCashFile(): {0}'.format(file))
+	records = createCashRecords(file)
+	if len(records) > 0:
+		return writeCashFile('40006-D', records, outputDir)
+	else:
+		return ''
+
+
+
 def processTradeFile(file, outputDir=get_current_path()):
 	"""
 	[String] trade file, [String] outputDir => [List] output file names
@@ -424,5 +453,4 @@ if __name__ == '__main__':
 	elif args.type == 't':
 		processTradeFile(join(get_current_path(), args.file))
 	else:
-		for x in createPositionRecords(join(get_current_path(), args.file)):
-			print(x)
+		processCashPositionFile(join(get_current_path(), args.file))
