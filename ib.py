@@ -8,7 +8,7 @@
 
 from utils.utility import writeCsv
 from IB.utility import get_current_path, writeTradeFiles, writeCashFile, \
-						writePositionFile, toOpenCloseGroup
+						writePositionFile, toOpenCloseGroup, fileNameWithoutPath
 from os.path import join
 import csv, logging, datetime
 logger = logging.getLogger(__name__)
@@ -24,9 +24,6 @@ class InvalidSymbol(Exception):
 class InvalidTradeSide(Exception):
 	pass
 
-class InvalidFileName(Exception):
-    pass
-
 
 
 def processCashPositionFile(file, outputDir=get_current_path()):
@@ -39,20 +36,33 @@ def processCashPositionFile(file, outputDir=get_current_path()):
     The rule is: cash file name always starts with 'cash', position file
     name always starts with 'position'.
     """
+    logger.debug('processCashPositionFile(): {0}'.format(file))
     if isCashFile(file):
-        return processCashFile(file, outputDir)
+        return writeCashFile('40006-B', createCashRecords(file), 
+        							outputDir, getDateFromFilename(file))
     elif isPositionFile(file):
-        return processPositionFile(file, outputDir)
+        return writePositionFile('40006-B', createPositionRecords(file), 
+        							outputDir, getDateFromFilename(file))
     else:
-        raise InvalidFileName(file)
+        logger.debug('processCashPositionFile(): not a cash or position file \
+                        {0}'.format(file))
+        return ''
 
 
 
-def isCashFile(fn):
+def isCashOrPositionFile(file):
 	"""
-	[String] file name => [Bool] is this a cash file
+	[String] full path file name => [Bool] is this a cash or position file
 	"""
-	tokens = fn.split('.')
+	return isCashFile(file) or isPositionFile(file)
+
+
+
+def isCashFile(file):
+	"""
+	[String] full path file name => [Bool] is this a cash file
+	"""
+	tokens = fileNameWithoutPath(file).split('.')
 	if len(tokens) > 2 and tokens[2] == 'cash':
 		return True 
 
@@ -60,31 +70,15 @@ def isCashFile(fn):
 
 
 
-def isPositionFile(fn):
+def isPositionFile(file):
 	"""
-	[String] file name => [Bool] is this a position file
+	[String] full path file name => [Bool] is this a position file
 	"""
-	tokens = fn.split('.')
+	tokens = fileNameWithoutPath(file).split('.')
 	if len(tokens) > 2 and tokens[2] == 'position':
 		return True 
 
 	return False
-
-
-
-def processPositionFile(file, outputDir):
-	"""
-	[String] file, [String] outputDir => [String] output csv file
-
-	if there are no records, i.e., no content to write, no csv file
-	is written and return value will be empty string.
-	"""
-	logger.info('processPositionFile(): {0}'.format(file))
-	records = createPositionRecords(file)
-	if len(records) > 0:
-		return writePositionFile('40006-B', records, outputDir)
-	else:
-		return ''
 
 
 

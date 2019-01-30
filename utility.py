@@ -5,7 +5,8 @@ import os
 from utils.utility import writeCsv
 from os.path import join
 from functools import reduce
-
+import logging
+logger = logging.getLogger(__name__)
 
 
 
@@ -18,32 +19,6 @@ def get_current_path():
 	http://stackoverflow.com/questions/3430372/how-to-get-full-path-of-current-files-directory-in-python
 	"""
 	return os.path.dirname(os.path.abspath(__file__))
-
-
-
-def isCashFile(file):
-	"""
-	[String] file => [Bool] yesno
-
-	file is a full path file name.
-	"""
-	if fileNameWithoutPath(file).split('.')[0].lower().startswith('cash'):
-		return True
-	else:
-		return False
-
-
-
-def isPositionFile(file):
-	"""
-	[String] file => [Bool] yesno
-
-	file is a full path file name.
-	"""
-	if fileNameWithoutPath(file).split('.')[0].lower().startswith('position'):
-		return True
-	else:
-		return False
 
 
 
@@ -85,17 +60,16 @@ def writeTradeFiles(recordGroups, outputDir, portfolio, broker, date):
 				'Price', 'TradeDate', 'SettlementDate', 'Commission Code 1',
 				'Commission Amt 1', 'Strategy']
 
-	written = 0		# a flag to indicate whether any output files are written
 	outputFiles = []
 	for (index, group) in enumerate(recordGroups):
-		written = written + 1
 		file = createTradeFileName(index, date, outputDir, portfolio)
 		writeCsv(file, [createCsvRow(fields, portfolio, broker, record) for record in group])
 		outputFiles.append(file)
 
-	if written == 0:
-		print('no output file is written')
-		
+	if outputFiles == []:
+		logger.debug('writeTradeFiles(): {0}, {1} no trades were written to ouput'
+						.format(portfolio, date))
+
 	return outputFiles
 
 
@@ -334,7 +308,7 @@ def createCsvRows(fields, records, portfolio):
 
 
 
-def writeCashFile(portfolio, records, outputDir):
+def writeCashFile(portfolio, records, outputDir, date):
 	"""
 	[List] cash records => [String] output csv file name
 
@@ -349,14 +323,14 @@ def writeCashFile(portfolio, records, outputDir):
 	"""
 	fields = ['Portfolio', 'Date', 'Currency', 'Balance']
 
-	file = join(outputDir, toFileName(records[0]['Date'], portfolio, 'cash'))
+	file = join(outputDir, toFileName(date, portfolio, 'cash'))
 	writeCsv(file, createCsvRows(fields, records, portfolio))
 
 	return file
 
 
 
-def writePositionFile(portfolio, records, outputDir):
+def writePositionFile(portfolio, records, outputDir, date):
 	"""
 	[List] position records => [String] output csv file name
 
@@ -374,7 +348,7 @@ def writePositionFile(portfolio, records, outputDir):
 	"""
 	fields = ['Portfolio', 'Date', 'Investment', 'Currency', 'Quantity']
 
-	file = join(outputDir, toFileName(records[0]['Date'], portfolio, 'position'))
+	file = join(outputDir, toFileName(date, portfolio, 'position'))
 	writeCsv(file, createCsvRows(fields, records, portfolio))
 
 	return file
