@@ -4,7 +4,8 @@
 import unittest2
 from os.path import join
 from IB.utility import get_current_path, toOpenCloseGroup
-from IB.guangfa import fileToRecords, createTradeRecords
+from IB.guangfa import tradefileToRecords, createTradeRecords, \
+                        createCashRecords, createPositionRecords
 from datetime import datetime
 
 
@@ -16,7 +17,7 @@ class TestGF(unittest2.TestCase):
 
 
     def testFileToRecords(self):
-        records = fileToRecords(join(get_current_path(), 'samples',
+        records = tradefileToRecords(join(get_current_path(), 'samples',
             'XXXtrddata_f20130603.txt'))
         self.assertEqual(len(records), 20)
         self.verifyFileRecord1(records[0])
@@ -58,6 +59,33 @@ class TestGF(unittest2.TestCase):
         self.assertEqual(len(groups[1]), 5)     # 2nd group has 5 trades
         self.verifyTradeRecord2(groups[0][0])
         self.verifyTradeRecord3(groups[1][4])
+
+
+    def testCreateCashRecords(self):
+        records = createCashRecords(join(get_current_path(), 'samples',
+            '8888802200cusfund_f20140129.txt'))
+        self.assertEqual(len(records), 9)
+        self.assertEqual('HKD', records[1]['Currency'])
+        self.assertEqual(datetime(2014,1,29), records[1]['Date'])
+        self.assertAlmostEqual(0, records[1]['Quantity'])
+        self.assertEqual('USD', records[6]['Currency'])
+        self.assertEqual(datetime(2014,1,29), records[6]['Date'])
+        self.assertAlmostEqual(1026915.92, records[6]['Quantity'])
+
+
+
+    def testCreatePositionRecords(self):
+        records = createPositionRecords(join(get_current_path(), 'samples',
+            '8888802200holddata_f20140129.txt'))
+        self.assertEqual(len(records), 15)
+        self.assertEqual(datetime(2014,1,29), records[0]['Date'])
+        self.assertEqual('SMH4 Comdty', records[0]['BloombergTicker'])
+        self.assertEqual('USD', records[0]['Currency'])
+        self.assertEqual(8, records[0]['Quantity'])
+        self.assertEqual(datetime(2014,1,29), records[5]['Date'])
+        self.assertEqual('S K4 Comdty', records[5]['BloombergTicker'])
+        self.assertEqual('USD', records[5]['Currency'])
+        self.assertEqual(-4, records[5]['Quantity'])
 
 
 

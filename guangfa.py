@@ -20,41 +20,41 @@ class InvalidTradeSide(Exception):
 
 
 
-# def processCashPositionFile(file, outputDir=get_current_path()):
-#     """
-#     [String] cash or position file => [String] output file
+def processCashPositionFile(file, outputDir=get_current_path()):
+    """
+    [String] cash or position file => [String] output file
 
-#     Convert an GuangFa cash or position file to cash or position file ready
-#     for Geneva reconciliation.
-#     """
-#     if isCashFile(file):
-#         return processCashFile(file, outputDir)
-#     elif isPositionFile(file):
-#         return processPositionFile(file, outputDir)
-#     else:
-#         raise InvalidFileName(file)
-
-
-
-# def isCashFile(fn):
-# 	"""
-# 	[String] file name => [Bool] is this a cash file
-# 	"""
-# 	if 'cusfund_' in fn.split('\\')[-1]:
-# 		return True 
-
-# 	return False
+    Convert an GuangFa cash or position file to cash or position file ready
+    for Geneva reconciliation.
+    """
+    if isCashFile(file):
+        return processCashFile(file, outputDir)
+    elif isPositionFile(file):
+        return processPositionFile(file, outputDir)
+    else:
+        raise InvalidFileName(file)
 
 
 
-# def isPositionFile(fn):
-# 	"""
-# 	[String] file name => [Bool] is this a position file
-# 	"""
-# 	if 'holddata_' in fn.split('\\')[-1]:
-# 		return True 
+def isCashFile(fn):
+	"""
+	[String] file name => [Bool] is this a cash file
+	"""
+	if 'cusfund_' in fn.split('\\')[-1]:
+		return True 
 
-# 	return False
+	return False
+
+
+
+def isPositionFile(fn):
+	"""
+	[String] file name => [Bool] is this a position file
+	"""
+	if 'holddata_' in fn.split('\\')[-1]:
+		return True 
+
+	return False
 	
 
 
@@ -79,11 +79,27 @@ def processTradeFile(file, outputDir=get_current_path()):
 
 
 
+def createCashRecords(file):
+	"""
+	[String] file => [List] cash records
+	"""
+	return list(map(cashRecord, cashfileToRecords(file)))
+
+
+
+def createPositionRecords(file):
+	"""
+	[String] file => [List] cash records
+	"""
+	return list(map(positionRecord, positionfileToRecords(file)))
+
+
+
 def createTradeRecords(file):
 	"""
 	[String] file => [Iterable] trade records
 	"""
-	return toSortedRecords(map(tradeRecord, fileToRecords(file)))
+	return toSortedRecords(map(tradeRecord, tradefileToRecords(file)))
 
 
 
@@ -126,18 +142,110 @@ def tradeRecord(fileRecord):
 
 
 
-def fileToRecords(file):
+def cashRecord(fileRecord):
+	"""
+	[Dictionary] file record => [Dictionary] cash record
+
+	Create a new cash record from the file record, the record has 3
+	fields:
+
+	1. Currency:
+	2. Quantity: must be positive
+	3. Date: of type datetime
+	"""
+	r = {}
+	r['Date'] = stringToDate(fileRecord['SettlementDate'])
+	r['Quantity'] = toFloat(fileRecord['Balance'])
+	if fileRecord['Currency'] == 'HK-HKD':
+		r['Currency'] = 'HKD'
+	else:
+		r['Currency'] = fileRecord['Currency']
+
+	return r
+
+
+
+def positionRecord(fileRecord):
+	"""
+	[Dictionary] file record => [Dictionary] position record
+
+	Create a new position record from the file record, the record has the
+	below fields:
+
+	1. BloombergTicker:
+	2. Quantity: float number, use negative to indicate short position
+	3. Currency
+	4. Date: of type datetime
+	"""
+	def getQuantity(buy, sell):
+		buy = toFloat(buy)
+		if buy > 0:
+			return buy
+		else:
+			return -1 * toFloat(sell)
+
+
+	r = {}
+	r['BloombergTicker'] = createTicker(fileRecord)
+	r['Quantity'] = getQuantity(fileRecord['BuyQuantity'], fileRecord['SellQuantity'])
+	r['Currency'] = fileRecord['Currency']
+	r['Date'] = stringToDate(fileRecord['SettlementDate'])
+	return r
+
+
+
+def tradefileToRecords(file):
 	"""
 	[String] file => [List] records
 
-	Convert a csv file to a list of records, where each record is a dictionary,
-	of type OrderedDict. The first row of the csv file is used as dictionary keys.
+	Convert the trade file (csv) to a list of records, where each record is a 
+	dictionary, of type OrderedDict. The csv file has no headers, therefore
+	we supply the headers here to use as the dict keys.
 	"""
 	headers = ['SettlementDate', 'TradeDate', 'MaturityDate', 'AccountNo', 
 				'AccountOpeningNo', 'TradeSerialNo', 'Currency', 'Exchange',
 				'Item', 'Contract', 'OpenClose', 'BuyQuantity', 'SellQuantity',
 				'Price', 'Amount', 'Time', 'Commission', 'Premium', 'OptionType',
 				'ExercisePrice', 'UpstreamCode', 'InlandAccountNo']
+	with open(file, newline='') as csvfile:
+		reader = csv.DictReader(csvfile, fieldnames=headers, delimiter='@')
+		return [row for row in reader]
+
+
+
+def cashfileToRecords(file):
+	"""
+	[String] file => [List] records
+
+	Convert the cash file (csv) to a list of records, where each record is a 
+	dictionary, of type OrderedDict. The csv file has no headers, therefore
+	we supply the headers here to use as the dict keys.
+
+	As we are interested in only 3 fields, date, currency and amount, so we
+	just put "1" for fields in between. For fields after 'Balance' we are not
+	interested either, so we don't put any headers.
+	"""
+	headers = ['SettlementDate', 1, 1, 'Currency', 1,1,1,1,1,1,1, 'Balance']
+	with open(file, newline='') as csvfile:
+		reader = csv.DictReader(csvfile, fieldnames=headers, delimiter='@')
+		return [row for row in reader][:-1]	# last row is total balance, no need
+
+
+
+def positionfileToRecords(file):
+	"""
+	[String] file => [List] records
+
+	Convert the cash file (csv) to a list of records, where each record is a 
+	dictionary, of type OrderedDict. The csv file has no headers, therefore
+	we supply the headers here to use as the dict keys.
+
+	As we are interested in only 3 fields, date, currency and amount, so we
+	just put "1" for fields in between. For fields after 'Balance' we are not
+	interested either, so we don't put any headers.
+	"""
+	headers = ['SettlementDate', 1,1,1, 'Currency', 'Exchange', 'Item',
+				'Contract', 'BuyQuantity', 'SellQuantity']
 	with open(file, newline='') as csvfile:
 		reader = csv.DictReader(csvfile, fieldnames=headers, delimiter='@')
 		return [row for row in reader]
@@ -179,19 +287,19 @@ def createFuturesTicker(fileRecord):
 
 	Create a Bloomberg ticker for a record from the file.
 	"""
-	bMap = {	# mapping underlying to Bloombert Ticker's first 2 letters,
+	bMap = {	# mapping Guangfa ticker to Bloombert Ticker's first 2 letters,
 				# and index or comdty
-		('HSI', 'HKFE'):('HI', 'Index'),	# Hang Seng Index
-		('MHU', 'HKFE'):('HU', 'Index'),	# mini Hang Seng Index
-		('SM', 'CBOT'): ('SM', 'Comdty'),	# Soybean Meal
-		('WH', 'CBOT'): ('W ', 'Comdty'), 	# Wheat
-		('SO', 'CBOT'): ('S ', 'Comdty'),	# Soybean
-		('HO', 'NYMEX'):('HO', 'Comdty'), 	# Ultra-low Sulfur Diesel Fuel
-		('RB', 'NYMEX'):('XB', 'Comdty'), 	# RBOB Gasoline
-		('CL', 'NYMEX'):('CL', 'Comdty'),	# Light Weight Crude Oil (WTI)
-		('BR', 'IPE') : ('CO', 'Comdty'),	# Brent Crude Oil
-		('NG', 'CME') : ('NG', 'Comdty'),	# Natural Gas
-		('GC', 'COMEX'):('GC', 'Comdty') 	# Gold
+		'HSI': ('HI', 'Index'),		# Hang Seng Index
+		'MHU': ('HU', 'Index'),		# mini Hang Seng Index
+		'SM' : ('SM', 'Comdty'),	# Soybean Meal
+		'WH' : ('W ', 'Comdty'), 	# Wheat
+		'SO' : ('S ', 'Comdty'),	# Soybean
+		'HO' : ('HO', 'Comdty'), 	# Ultra-low Sulfur Diesel Fuel
+		'RB' : ('XB', 'Comdty'), 	# RBOB Gasoline
+		'CL' : ('CL', 'Comdty'),	# Light Weight Crude Oil (WTI)
+		'BR' : ('CO', 'Comdty'),	# Brent Crude Oil
+		'NG' : ('NG', 'Comdty'),	# Natural Gas
+		'GC' : ('GC', 'Comdty') 	# Gold
 	}
 
 	mMap = {	# mapping month to Bloomberg Ticker's 3rd letter
@@ -210,7 +318,7 @@ def createFuturesTicker(fileRecord):
 		12: 'Z'
 	}
 
-	prefix, suffix = bMap[(fileRecord['Item'], fileRecord['Exchange'])]
+	prefix, suffix = bMap[fileRecord['Item']]
 	month = mMap[int(fileRecord['Contract'][-2:])]
 	year = fileRecord['Contract'][-4:-2]
 	
@@ -316,5 +424,5 @@ if __name__ == '__main__':
 	elif args.type == 't':
 		processTradeFile(join(get_current_path(), args.file))
 	else:
-		pass
-	# 	processCashPositionFile(join(get_current_path(), args.file), get_current_path())
+		for x in createPositionRecords(join(get_current_path(), args.file)):
+			print(x)
