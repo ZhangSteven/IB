@@ -6,9 +6,9 @@ Geneva file: CSV format, for reconciliation
 
 There are 3 files, one for each broker:
 
-ib.py: IB
+ib.py     : IB
 henghua.py: Heng Hua International (HGNH)
-gf.py: Guang Fa Securities
+guangfa.py: Guang Fa Securities
 
 
 
@@ -64,14 +64,21 @@ Pending
 2) HGNH trades do not mark partial execution, for example,
 
 	Type	Quantity	Open/Close
-	Buy		10			O (Open 10 long positions)
-	Sell	15			O (but it actually is 10 for closing, 5 for opening)
+	Buy	10		O (Open 10 long positions)
+	Sell	15		O (but it actually is 10 for closing, 5 for opening)
 
 Is there a way to auto detect and fix this?
 
 3) No way to prevent uploading the same trade file twice or to prevent missing a trade file? Record the total number of trades for each broker and match with Bloomberg tickets, maybe.
 
 4) Trade cancellations cannot flow AIM to Geneva.
+
+
+# ver 0.23, 2019-01-30
+1) Guang Fa security files (trade, position, cash) can now be handled.
+2) Empty records files are handled now, whenever there are files with empty
+ records, a csv file is written with headers only. This way, Geneva side won't
+ generate files not found error.
 
 
 
