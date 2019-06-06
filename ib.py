@@ -208,7 +208,8 @@ def toNewTradePrice(record):
 	is different from the price to upload to Bloomberg AIM. For example, soybean
 	futures, IB provides a price of 8.8543 with a multipler of 5000, however 
 	Bloomberg has a multipler of 50, so the price to upload to AIM should be 
-	times 100, which is 885.43.
+	times 100, which is 885.43. This usually happens with commodity futures,
+	such as Soybean, Gaoline, Ulta Low Sulful Diesel (old Heating Oil).
 	"""
 	def recordType(ticker):
 		"""
@@ -224,6 +225,7 @@ def toNewTradePrice(record):
 	f_map = {
 		('XB', 'Comdty'): 100,	# IB multipler 42000, Bloomberg multipler 420
 		('PG', 'Comdty'): 100,	# IB multipler 42000, Bloomberg multipler 420
+		('HO', 'Comdty'): 100,	# IB multipler 42000, Bloomberg multipler 420
 		('S ', 'Comdty'): 100	# IB multipler 5000, Bloomberg multipler 50
 	}
 
@@ -361,6 +363,7 @@ def createFuturesTicker(record):
 		('PL' , 50): ('PL', 'Comdty'),		# Platinum futures
 		('RB' , 42000): ('XB', 'Comdty'),	# Gasoline RBOB futures (NYMEX)
 		('RBOB',42000): ('PG', 'Comdty'),	# Gasoline RBOB futures (ICE)
+		('HO' , 42000): ('HO', 'Comdty'),	# ULSD futures (NYMEX)
 		('QG' , 2500) : ('EO', 'Comdty'), 	# E-Mini Natural Gas futures
 		('ZS' , 5000) : ('S ', 'Comdty'),	# Soybean
 		('GC' , 100): ('GC', 'Comdty')		# Gold
