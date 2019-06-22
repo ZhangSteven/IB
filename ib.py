@@ -351,8 +351,9 @@ def createFuturesTicker(record):
 
 	Create a Bloomberg ticker for record of futures type.
 	"""
-	bMap = {	# mapping underlying to Bloombert Ticker's first 2 letters,
-				# and index or comdty
+	bMap = {	# mapping (underlying, multiplier) to Bloombert Ticker's 
+				# first 2 letters plus type (index or comdty)
+
 		('HSI', 50): ('HI', 'Index'),
 		('MHI', 10): ('HU', 'Index'), 		# mini Hang Seng index futures
 		('DAX', 25): ('GX', 'Index'),		# DAX index futures
@@ -366,7 +367,8 @@ def createFuturesTicker(record):
 		('HO' , 42000): ('HO', 'Comdty'),	# ULSD futures (NYMEX)
 		('QG' , 2500) : ('EO', 'Comdty'), 	# E-Mini Natural Gas futures
 		('ZS' , 5000) : ('S ', 'Comdty'),	# Soybean
-		('GC' , 100): ('GC', 'Comdty')		# Gold
+		('GC' , 100): ('GC', 'Comdty'),		# Gold
+		('XINA50' , 1): ('XU', 'Index')		# FTSE CHINA A50 Index
 	}
 
 	mMap = {	# mapping month to Bloomberg Ticker's 3rd letter
