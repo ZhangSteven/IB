@@ -368,7 +368,8 @@ def createFuturesTicker(record):
 		('QG' , 2500) : ('EO', 'Comdty'), 	# E-Mini Natural Gas futures
 		('ZS' , 5000) : ('S ', 'Comdty'),	# Soybean
 		('GC' , 100): ('GC', 'Comdty'),		# Gold
-		('XINA50' , 1): ('XU', 'Index')		# FTSE CHINA A50 Index
+		('XINA50' , 1): ('XU', 'Index'),	# FTSE CHINA A50 Index
+		('NIFTY', 2): ('IH', 'Index')		# NIFTY Index traded on SGX
 	}
 
 	mMap = {	# mapping month to Bloomberg Ticker's 3rd letter
